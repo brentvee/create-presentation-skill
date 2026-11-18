@@ -1,0 +1,1417 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<script>
+  /* Theme: the data-theme attribute above is the deck's default. A viewer's saved choice wins. Applied before first paint. */
+  try { const t = localStorage.getItem('deck-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (_) {}
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DESCRIPTION}}">
+<style>
+/* =====================================================================
+   Tokens
+   ===================================================================== */
+:root {
+  --bg: #071a20;
+  --bg-2: #0b2a33;
+  --ink: #f4efe6;
+  --muted: #9fb3b8;
+  --faint: rgba(244, 239, 230, .12);
+  --teal: #0f4c5c;
+  --teal-2: #2a9d8f;
+  --sand: #e9c46a;
+  --coral: #e76f51;
+  --sky: #8ecae6;
+  --mono: "Cascadia Code", "Cascadia Mono", Consolas, "SF Mono", ui-monospace, monospace;
+  --sans: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --spring: cubic-bezier(.2, .9, .25, 1.15);
+  --smooth: cubic-bezier(.2, .8, .2, 1);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--page); color: var(--ink); font-family: var(--sans); overflow: hidden; }
+button { font: inherit; color: inherit; }
+h1, h2, h3, p, ul { margin: 0; }
+
+/* =====================================================================
+   Stage (fixed 1600x900 canvas, scaled to fit)
+   ===================================================================== */
+#stage {
+  position: absolute; left: 0; top: 0;
+  width: 1600px; height: 900px;
+  transform-origin: 0 0;
+  background: var(--bg);
+  overflow: hidden;
+}
+#bg { position: absolute; inset: 0; pointer-events: none; }
+#bg .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: .45; }
+#bg .b1 { width: 700px; height: 700px; left: -200px; top: -250px; background: var(--teal); animation: drift1 26s ease-in-out infinite alternate; }
+#bg .b2 { width: 560px; height: 560px; right: -160px; bottom: -220px; background: var(--teal-2); opacity: .25; animation: drift2 31s ease-in-out infinite alternate; }
+#bg .b3 { width: 420px; height: 420px; left: 55%; top: 10%; background: var(--sand); opacity: .08; animation: drift1 37s ease-in-out infinite alternate-reverse; }
+#bg .grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(var(--faint) 1px, transparent 1px), linear-gradient(90deg, var(--faint) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse at center, #000 10%, transparent 75%);
+  opacity: .35;
+}
+@keyframes drift1 { to { transform: translate(180px, 120px) scale(1.15); } }
+@keyframes drift2 { to { transform: translate(-200px, -90px) scale(.9); } }
+
+.slide { position: absolute; inset: 0; display: none; padding: 80px 110px; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+
+/* =====================================================================
+   Reveal primitives: add .in to animate an .fx element into place
+   ===================================================================== */
+.fx { opacity: 0; transition: opacity .7s ease, transform .9s var(--smooth), filter .9s ease; }
+.fx.up { transform: translateY(40px); }
+.fx.down { transform: translateY(-40px); }
+.fx.left { transform: translateX(-60px); }
+.fx.right { transform: translateX(60px); }
+.fx.pop { transform: scale(.6); transition-timing-function: ease, var(--spring), ease; }
+.fx.blur { filter: blur(14px); }
+.fx.in { opacity: 1; transform: none; filter: none; }
+
+.bump { animation: bump .45s var(--spring); }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+
+/* =====================================================================
+   Type
+   ===================================================================== */
+.kicker { font: 600 18px var(--mono); color: var(--sand); letter-spacing: .14em; text-transform: uppercase; }
+.huge { font-size: 116px; line-height: 1.02; font-weight: 800; letter-spacing: -.035em; margin: 26px 0 34px; }
+.big { font-size: 76px; line-height: 1.04; font-weight: 800; letter-spacing: -.025em; }
+.h2 { font-size: 54px; line-height: 1.08; font-weight: 800; letter-spacing: -.02em; }
+.lede { font-size: 28px; line-height: 1.45; color: var(--muted); max-width: 1040px; }
+.grad { background: linear-gradient(95deg, var(--sand), var(--coral)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.mono { font-family: var(--mono); }
+kbd {
+  display: inline-block; min-width: 1.6em; padding: .05em .45em; border-radius: 6px;
+  border: 1px solid rgba(244,239,230,.3); border-bottom-width: 3px;
+  font: 600 .85em var(--mono); text-align: center; color: var(--ink);
+}
+
+/* Words that cascade in */
+.w { display: inline-block; opacity: 0; transform: translateY(45%) rotate(5deg); filter: blur(8px);
+     transition: opacity .6s ease, transform .9s var(--spring), filter .7s ease; }
+.w.in { opacity: 1; transform: none; filter: none; }
+
+/* =====================================================================
+   Generic components (used across most decks)
+   ===================================================================== */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes blink { 50% { opacity: 0; } }
+.caret::after { content: ""; display: inline-block; width: 3px; height: 1em; background: var(--sand); margin-left: 4px; vertical-align: -4px; animation: blink 1s steps(1) infinite; }
+.chip { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--faint); background: rgba(255,255,255,.04); border-radius: 999px; padding: 10px 20px; font-size: 19px; color: var(--ink); }
+.chip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--teal-2); }
+.gone { display: none !important; }
+/* Per-slide speaker notes: never shown on the stage or in thumbnails. */
+.slide > .notes { display: none !important; }
+
+/* =====================================================================
+   Speaker-notes window (this file opened with #notes). Keep it OFF the
+   shared screen: in Teams/Zoom share only the deck window.
+   ===================================================================== */
+body.notes-mode { display: block; height: auto; min-height: 100%; overflow: auto; background: var(--bg); }
+body.notes-mode #main, body.notes-mode #dock, body.notes-mode #progress, body.notes-mode #hold-hint { display: none !important; }
+#nv { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; color: var(--ink); font-family: var(--sans); }
+.nv-top { display: flex; align-items: center; gap: 22px; padding: 14px 22px; border-bottom: 1px solid var(--faint); flex-wrap: wrap; }
+.nv-slide { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex: 1; }
+.nv-no { font: 800 34px var(--mono); color: var(--sand); }
+.nv-of { font: 600 16px var(--mono); color: var(--muted); }
+.nv-title { font-size: 24px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nv-status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.nv-dot { width: 10px; height: 10px; border-radius: 50%; background: #9aa1a8; }
+.nv-live .nv-dot { background: #2fbf71; box-shadow: 0 0 0 4px rgba(47,191,113,.18); }
+.nv-timer { display: flex; align-items: center; gap: 10px; }
+.nv-elapsed { font: 800 30px var(--mono); }
+.nv-timer.over .nv-elapsed { color: var(--coral); }
+.nv-target { font-size: 13px; color: var(--muted); }
+.nv-tbar { width: 120px; height: 6px; border-radius: 6px; background: var(--faint); overflow: hidden; }
+.nv-tbar i { display: block; height: 100%; width: 0; background: var(--sand); }
+.nv-timer.over .nv-tbar i { background: var(--coral); }
+.nv-clock { font: 700 22px var(--mono); color: var(--muted); }
+#nv button { font: 600 14px var(--sans); color: var(--ink); background: var(--panel); border: 1px solid var(--faint); border-radius: 10px; height: 38px; padding: 0 14px; cursor: pointer; }
+#nv button:hover { border-color: var(--sand); }
+#nv button.primary { background: var(--sand); color: var(--on-accent); border-color: transparent; min-width: 120px; }
+#nv button.big { height: 52px; font-size: 18px; padding: 0 22px; }
+.nv-main { display: grid; grid-template-columns: 1fr 340px; gap: 26px; padding: 22px; align-items: start; }
+.nv-label { font: 700 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.nv-label small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.nv-summary { font-size: 23px; line-height: 1.5; padding: 14px 16px; border-radius: 12px; border: 1px dashed transparent; margin-bottom: 22px; outline: none; }
+.nv-summary:hover, .nv-summary:focus { border-color: var(--faint); background: var(--panel); }
+.nv-summary:empty::before { content: "No talking points for this slide. Click to add some."; color: var(--muted); }
+.nv-summary p { margin: 0 0 .5em; }
+.nv-cues { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.nv-cues li { display: grid; grid-template-columns: 70px 1fr; gap: 12px; align-items: baseline; padding: 10px 14px; border-radius: 12px; border: 1px solid transparent; color: var(--muted); font-size: 19px; line-height: 1.45; transition: background .25s, color .25s, border-color .25s; }
+.nv-cues li .ts { font: 600 13px var(--mono); color: var(--muted); cursor: pointer; text-decoration: underline dotted; }
+.nv-cues li .tx { outline: none; border-radius: 6px; }
+.nv-cues li .tx:focus { background: var(--panel); }
+.nv-cues li.past { opacity: .55; }
+.nv-cues li.now { color: var(--ink); background: color-mix(in srgb, var(--sand) 12%, transparent); border-color: color-mix(in srgb, var(--sand) 40%, transparent); font-size: 22px; }
+.nv-cues li.hold .ts::after { content: " \23F8"; }
+.nv-cues li.edited .tx::after, .nv-summary.edited::after { content: " \270E"; color: var(--sand); font-size: .8em; }
+.nv-empty { color: var(--muted); font-size: 16px; }
+.nv-hold { margin-top: 16px; display: none; padding: 10px 14px; border-radius: 10px; background: var(--sand); color: var(--on-accent); font-weight: 700; }
+.nv-holding .nv-hold { display: block; }
+.nv-side { display: flex; flex-direction: column; min-width: 0; }
+.nv-mini { position: relative; width: 340px; height: 191px; border-radius: 10px; overflow: hidden; background: var(--bg); outline: 1px solid var(--faint); margin-bottom: 18px; }
+.nv-mini > .inner { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform: scale(.2125); transform-origin: 0 0; pointer-events: none; }
+.nv-mini .slide { display: flex !important; }
+.nv-mini * { animation: none !important; transition: none !important; }
+.nv-mini .fx, .nv-mini .w, .nv-mini .mask { opacity: 1 !important; transform: none !important; filter: none !important; clip-path: none !important; }
+.nv-mini [data-mini-hide], .nv-mini .cursor { display: none !important; }
+.nv-mini [data-mini-show] { display: block !important; }
+.nv-mini.cur { outline: 2px solid var(--sand); }
+.nv-nexttitle { font-weight: 700; font-size: 18px; margin: -8px 0 6px; }
+.nv-nextsum { font-size: 15px; color: var(--muted); line-height: 1.45; }
+.nv-bar { display: flex; align-items: center; gap: 10px; padding: 12px 22px; border-top: 1px solid var(--faint); flex-wrap: wrap; }
+.nv-sp { flex: 1; }
+.nv-prog { width: 180px; height: 6px; border-radius: 6px; background: var(--faint); overflow: hidden; }
+.nv-prog i { display: block; height: 100%; width: 0; background: var(--sand); }
+.nv-time { font: 13px var(--mono); color: var(--muted); min-width: 92px; }
+.nv-export { margin: 0 22px 18px; width: calc(100% - 44px); height: 200px; font: 13px/1.5 var(--mono); background: var(--panel); color: var(--ink); border: 1px solid var(--faint); border-radius: 10px; padding: 12px; }
+@media (max-width: 900px) { .nv-main { grid-template-columns: 1fr; } .nv-side { display: none; } }
+/* Code must show => and != literally, not as font ligatures. */
+pre, code, kbd, .mono { font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0; }
+/* Section-title wipe: add .in to reveal left to right. */
+.mask { clip-path: inset(0 100% 0 0); transition: clip-path 1.2s cubic-bezier(.7,0,.2,1); }
+.mask.in { clip-path: inset(0 0 0 0); }
+/* Pieces created by confetti(). */
+.confetto { position: absolute; width: 10px; height: 14px; border-radius: 2px; z-index: 70; pointer-events: none; animation: confetti 2.4s cubic-bezier(.15,.6,.4,1) forwards; }
+@keyframes confetti {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  35% { transform: translate(calc(var(--dx) * .75), var(--dy)) rotate(calc(var(--r) * .5)); opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 820px)) rotate(var(--r)); opacity: 0; }
+}
+
+/* =====================================================================
+   Phone frame for mobile-first apps: .phone > .vp > .app (+ .cursor.touch)
+   Viewport is 380x788 CSS px; recreate the app at real mobile sizes inside.
+   Text inside recreated app screens may be 12-15px (it is a phone); deck
+   text outside the frame stays >= 16px.
+   ===================================================================== */
+.phone { position: relative; width: 404px; height: 812px; flex: none; border-radius: 58px; background: #0b0d12; padding: 12px;
+         box-shadow: 0 50px 100px rgba(0,0,0,.45), 0 0 0 2px #2a3040, inset 0 0 0 2px #1a1f2b; }
+.phone::before { content: ""; position: absolute; left: 50%; top: 22px; width: 112px; height: 32px; margin-left: -56px; border-radius: 20px; background: #000; z-index: 90; }
+.phone > .vp { position: relative; width: 380px; height: 788px; border-radius: 46px; overflow: hidden; background: #fff; }
+.phone .app { width: 380px; height: 788px; display: block; font: 14px/1.4 var(--sans); }
+/* Touch "cursor": a soft fingertip dot instead of an arrow. Use with the same moveTo/click helpers. */
+.cursor.touch { width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: rgba(20,20,20,.28); box-shadow: 0 0 0 3px rgba(255,255,255,.7); filter: none; }
+.cursor.touch svg { display: none; }   /* click() still draws the ripple, which reads as a tap */
+/* Scrolling inside a recreated screen: wrap content in .scroller and tween its translateY
+   (the viewport clips). Measure offsets in tween setup, after any reveal. */
+.scroller { position: relative; will-change: transform; }
+/* Phone product slides: .side | .phone | .aside. A phone is narrow, so give the right column a job:
+   a synced code panel, static callouts, a second phone, or a big result. */
+.product .aside { flex: 1; min-width: 0; align-self: center; display: grid; gap: 16px; }
+.aside .callout { position: static; max-width: none; }
+/* Fixed phone chrome (status bar, app header, tab bar) lives OUTSIDE the zoom layer:
+   .phone > .vp > [.status] + .app(zoom layer…) + [.tabbar]. zoom() then only scales .app. */
+.phone .status { position: absolute; left: 0; right: 0; top: 0; height: 46px; z-index: 80; display: flex; justify-content: space-between; align-items: center; padding: 0 34px; font: 600 14px var(--sans); color: #111; pointer-events: none; }
+/* =====================================================================
+   Behind the scenes: shared chat bits
+   ===================================================================== */
+.msg { display: flex; gap: 16px; align-items: flex-start; }
+.msg .av { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 15px; flex: none; background: var(--coral); }
+.msg .av.cl { background: var(--sand); color: var(--on-accent); font-size: 20px; }
+.msg .bubble { background: var(--bg-2); border: 1px solid var(--faint); border-radius: 6px 20px 20px 20px; padding: 18px 24px; font-size: 24px; line-height: 1.45; }
+.msg.claude .bubble { background: color-mix(in srgb, var(--sand) 7%, transparent); border-color: color-mix(in srgb, var(--sand) 22%, transparent); }
+.dlabel { font: 600 14px var(--mono); color: var(--muted); letter-spacing: .1em; text-transform: uppercase; margin-right: 6px; }
+
+/* =====================================================================
+   Product slides (7-9): left column + browser frame
+   ===================================================================== */
+.product.active { flex-direction: row; align-items: center; justify-content: flex-start; gap: 34px; padding: 50px 48px; }
+.side { width: 340px; flex: none; }
+.side .stepno { font: 800 64px var(--mono); color: var(--sand); line-height: 1; }
+.side h2 { font-size: 44px; line-height: 1.1; letter-spacing: -.02em; margin: 14px 0 14px; }
+.side p { font-size: 19px; color: var(--muted); line-height: 1.5; }
+.steps { list-style: none; padding: 0; margin-top: 30px; display: grid; gap: 10px; }
+.steps li { display: flex; align-items: center; gap: 14px; font-size: 19px; color: #6f8a90; padding: 10px 14px; border-radius: 12px; transition: all .4s; border: 1px solid transparent; }
+.steps li .bx { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #3b5257; flex: none; display: grid; place-items: center; font-size: 14px; transition: all .4s; }
+.steps li.now { color: var(--ink); background: color-mix(in srgb, var(--sand) 8%, transparent); border-color: color-mix(in srgb, var(--sand) 25%, transparent); }
+.steps li.now .bx { border-color: var(--sand); box-shadow: 0 0 0 5px color-mix(in srgb, var(--sand) 15%, transparent); animation: pulse 1.4s ease-in-out infinite; }
+.steps li.done { color: var(--muted); }
+.steps li.done .bx { background: var(--teal-2); border-color: var(--teal-2); color: #fff; }
+.steps li.done .bx::after { content: "✓"; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 9px transparent; } }
+.src { margin-top: 28px; font: 16px/1.6 var(--mono); color: var(--muted); border-top: 1px solid var(--faint); padding-top: 16px; }
+.src b { color: var(--muted); font-weight: 600; }
+
+.browser { position: relative; width: 1130px; height: 760px; flex: none; border-radius: 14px; background: #fff; overflow: hidden;
+           box-shadow: 0 50px 100px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.1); }
+.chrome { height: 44px; background: #e9ecef; display: flex; align-items: center; gap: 16px; padding: 0 16px; border-bottom: 1px solid #d6d9dc; }
+.chrome .dots { display: flex; gap: 7px; }
+.chrome .dots i { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; }
+.chrome .dots i:nth-child(2) { background: #febc2e; }
+.chrome .dots i:nth-child(3) { background: #28c840; }
+.chrome .url { flex: 1; height: 28px; border-radius: 8px; background: #fff; color: #495057; font: 13px var(--sans); display: flex; align-items: center; padding: 0 12px; gap: 8px; white-space: nowrap; overflow: hidden; }
+.chrome .url .lock { color: #868e96; }
+.vp { position: relative; height: 716px; overflow: hidden; background: #fff; }
+
+/* ---- the recreated StayDesk app ---- */
+.app { position: relative; width: 1130px; height: 716px; display: flex; transform-origin: 0 0; color: #212529; font: 14px/1.45 var(--sans); }
+.a-side { width: 210px; flex: none; background: linear-gradient(180deg, #0f4c5c, #0b3440); color: #fff; }
+.a-brand { height: 56px; display: flex; align-items: center; gap: 9px; padding: 0 18px; background: rgba(0,0,0,.4); font-weight: 600; font-size: 17px; }
+.a-side nav { padding: 16px 12px; display: grid; gap: 6px; }
+.a-side nav a { display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 12px; border-radius: 4px; color: #d7d7d7; font-size: 14px; }
+.a-side nav a.on { background: rgba(255,255,255,.3); color: #fff; }
+.a-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.a-top { height: 56px; flex: none; background: #f7f7f7; border-bottom: 1px solid #d6d5d5; display: flex; align-items: center; justify-content: flex-end; padding: 0 26px; color: #6c757d; font-size: 13px; }
+.a-content { position: relative; padding: 20px 26px; flex: 1; }
+.app h1 { font-size: 24px; font-weight: 600; margin: 0 0 2px; }
+.app .mut { color: #6c757d; }
+.app .sm { font-size: 12px; }
+.a-card { border: 1px solid #dee2e6; border-radius: 6px; background: #fff; }
+.fld label { display: block; font-size: 13px; margin-bottom: 5px; }
+.inp { position: relative; height: 38px; border: 1px solid #ced4da; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; padding: 0 11px; background: #fff; transition: box-shadow .2s, border-color .2s; }
+.inp.area { height: 74px; align-items: flex-start; padding-top: 8px; }
+.inp.focus { border-color: #5a9aa8; box-shadow: 0 0 0 .22rem rgba(15,76,92,.22); }
+.inp.invalid { border-color: #e50000; box-shadow: 0 0 0 1px #e50000; }
+.inp.valid { border-color: #26b050; box-shadow: 0 0 0 1px #26b050; }
+.val { white-space: nowrap; }
+.val:empty::before { content: attr(data-ph); color: #adb5bd; }
+.typing::after { content: ""; display: inline-block; width: 1px; height: 1.05em; background: #212529; margin-left: 1px; vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+.inp .ico { color: #6c757d; display: grid; place-items: center; }
+.dd { position: absolute; left: -1px; right: -1px; top: 37px; list-style: none; margin: 0; padding: 4px 0; background: #fff; border: 1px solid #ced4da; border-radius: 0 0 6px 6px; box-shadow: 0 10px 20px rgba(0,0,0,.14); z-index: 5; opacity: 0; transform: translateY(-6px); transition: opacity .2s, transform .2s; }
+.dd.open { opacity: 1; transform: none; }
+.dd li { padding: 3px 11px; }
+.dd li.hl { background: #0f4c5c; color: #fff; }
+.btn-p, .btn-o, .btn-s, .btn-d, .btn-sm { height: 38px; border-radius: 6px; font: inherit; padding: 0 16px; cursor: default; transition: transform .12s, background .2s, opacity .3s; white-space: nowrap; }
+.btn-p { border: 1px solid #0f4c5c; background: #0f4c5c; color: #fff; }
+.btn-o { border: 1px solid #0f4c5c; background: #fff; color: #0f4c5c; }
+.btn-o.hover { background: #0f4c5c; color: #fff; }
+.press { transform: scale(.93); }
+.loading { position: relative; color: transparent !important; }
+.loading::after { content: ""; position: absolute; left: calc(50% - 9px); top: calc(50% - 9px); width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; animation: spin .7s linear infinite; }
+
+.cursor { position: absolute; left: 0; top: 0; z-index: 50; width: 26px; height: 32px; pointer-events: none; margin: -3px 0 0 -4px; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); }
+.cursor.fx { transition: opacity .4s; }
+.cursor svg { transition: transform .12s; transform-origin: 4px 3px; }
+.cursor.down svg { animation: clickdown .3s ease; }
+@keyframes clickdown { 40% { transform: scale(.78); } }
+.ripple { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 3px solid color-mix(in srgb, var(--coral) 85%, transparent); z-index: 49; pointer-events: none; animation: ripple .6s ease-out forwards; }
+@keyframes ripple { to { transform: scale(4.5); opacity: 0; } }
+
+.callout { position: absolute; left: 22px; bottom: 22px; max-width: 520px; z-index: 60; background: rgba(7,26,32,.94); color: #f4efe6; border-radius: 14px;   /* always a dark card, so fixed light text */ padding: 16px 20px 16px 18px;
+           border-left: 4px solid var(--sand); box-shadow: 0 20px 40px rgba(0,0,0,.35); font: 17px/1.5 var(--sans);
+           opacity: 0; transform: translateY(16px); transition: opacity .4s, transform .5s var(--spring); display: flex; gap: 14px; }
+.callout.show { opacity: 1; transform: none; }
+.callout .ci { flex: none; width: 30px; height: 30px; border-radius: 9px; background: color-mix(in srgb, var(--sand) 16%, transparent); color: var(--sand); display: grid; place-items: center; font-weight: 800; }
+.callout code { font: 14px var(--mono); background: rgba(255,255,255,.08); padding: 2px 7px; border-radius: 5px; color: var(--sand); }
+.callout.right { left: auto; right: 22px; }
+.callout.top { bottom: auto; top: 22px; }
+
+/* =====================================================================
+   Presenter chrome (outside the stage, never paused)
+   ===================================================================== */
+#progress { position: fixed; left: 0; right: 0; top: 0; height: 4px; background: rgba(255,255,255,.06); z-index: 20; }
+#progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--teal-2), var(--sand)); }
+/* Layout: the slide area on top, the presenter dock underneath. */
+body { display: flex; flex-direction: column; }
+#main { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+#dock { flex: none; background: #041216; border-top: 1px solid rgba(255,255,255,.08); padding: 8px 14px 10px; display: flex; flex-direction: column; gap: 8px; }
+body.clean #dock { display: none; }
+#bar {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  font: 13px var(--sans); color: #cfd8da;
+}
+#bar .grp { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border-radius: 11px; background: rgba(255,255,255,.05); }
+#b-play { min-width: 92px !important; background: var(--sand) !important; color: var(--on-accent) !important; font-weight: 700; }
+#b-play:hover { filter: brightness(1.08); }
+#b-play svg { fill: var(--on-accent); }
+
+/* Storyboard filmstrip */
+#strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: thin; scrollbar-color: #2a3e43 transparent; }
+.sb { position: relative; flex: none; width: 176px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; color: #cfd8da; font: 12px var(--sans); }
+.sb .mini { position: relative; width: 176px; height: 99px; border-radius: 8px; overflow: hidden; background: var(--bg); outline: 1px solid rgba(255,255,255,.1); transition: outline-color .2s, transform .2s; }
+.sb .mini > .inner { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform: scale(.11); transform-origin: 0 0; pointer-events: none; }
+/* Thumbnails keep the .active class, so each slide's own .x.active layout rules apply. */
+.sb .mini * { animation: none !important; transition: none !important; }
+.sb .mini .fx, .sb .mini .w, .sb .mini .room, .sb .mini .mask { opacity: 1 !important; transform: none !important; filter: none !important; clip-path: none !important; }
+.sb .mini [data-mini-hide], .sb .mini .cursor { display: none !important; }
+.sb .mini [data-mini-show] { display: block !important; }
+/* data-mini-hide: overlays/end-states to hide in thumbnails. data-mini-show: hidden-until-revealed content to show. */
+.sb .cap { display: flex; gap: 6px; align-items: baseline; margin-top: 5px; white-space: nowrap; overflow: hidden; }
+.sb .cap b { font: 700 11px var(--mono); color: var(--sand); }
+.sb .cap span { overflow: hidden; text-overflow: ellipsis; }
+.sb .bar2 { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--sand); }
+.sb:hover .mini { outline-color: color-mix(in srgb, var(--sand) 60%, transparent); transform: translateY(-2px); }
+.sb.cur .mini { outline: 2px solid var(--sand); }
+.sb.cur .cap { color: #fff; }
+.sb.seen .cap b { color: var(--teal-2); }
+.sb:focus-visible { outline: none; }
+@media (max-width: 1100px) {
+  #bar button > span:not(#play-label) { display: none; }
+  #time { display: none; }
+  #bar .sep { display: none; }
+}
+@media (max-height: 640px) {
+  .sb, .sb .mini { width: 128px; }
+  .sb .mini { height: 72px; }
+  .sb .mini > .inner { transform: scale(.08); }
+}
+.sb:focus-visible .mini { outline: 2px solid #fff; }
+#bar button { background: none; border: 0; height: 34px; min-width: 34px; padding: 0 8px; border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: #cfd8da; white-space: nowrap; }
+#bar button:hover { background: rgba(255,255,255,.08); color: #fff; }
+#bar button.on { color: var(--sand); }
+#bar button:focus-visible { outline: 2px solid var(--sand); outline-offset: 1px; }
+#bar svg { width: 18px; height: 18px; fill: currentColor; }
+#bar .sep { width: 1px; height: 22px; background: rgba(255,255,255,.12); margin: 0 4px; flex: none; }
+#counter { font: 600 13px var(--mono); padding: 0 8px; white-space: nowrap; }
+#scrub { position: relative; flex: 1; min-width: 80px; height: 34px; display: flex; align-items: center; }
+#scrub-track { position: absolute; left: 0; right: 0; height: 5px; border-radius: 5px; background: rgba(255,255,255,.12); }
+#scrub-fill { height: 100%; width: 0; border-radius: 5px; background: var(--sand); }
+#scrub-beats i { position: absolute; top: -4px; width: 3px; height: 13px; border-radius: 2px; background: var(--coral); transform: translateX(-1px); }
+#scrub input { position: absolute; inset: 0; width: 100%; margin: 0; opacity: 0; cursor: pointer; }
+#time { font: 12px var(--mono); color: #8aa1a6; min-width: 92px; text-align: right; white-space: nowrap; }
+#speed { font: 700 13px var(--mono); min-width: 52px !important; }
+#hold-hint {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 19;
+  padding: 8px 16px; border-radius: 999px; background: var(--sand); color: var(--on-accent); font: 600 13px var(--sans);
+  opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap;
+}
+#hold-hint.show { opacity: 1; animation: hint 1.6s ease-in-out infinite; }
+@keyframes hint { 50% { transform: translate(-50%, -4px); } }
+#toast { position: fixed; left: 50%; top: 24px; transform: translateX(-50%); z-index: 30; padding: 8px 16px; border-radius: 10px; background: rgba(4,18,22,.92); border: 1px solid rgba(255,255,255,.12); font: 600 14px var(--sans); opacity: 0; transition: opacity .25s; pointer-events: none; }
+#toast.show { opacity: 1; }
+
+.overlay { position: fixed; inset: 0; z-index: 40; background: rgba(2, 12, 14, .9); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 40px; }
+.overlay[hidden] { display: none; }
+.ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; width: min(1200px, 100%); max-height: 100%; overflow: auto; padding: 4px; }
+.ov-card { text-align: left; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; background: linear-gradient(160deg, #0b2a33, #071a20); padding: 18px; aspect-ratio: 16 / 9; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; color: var(--ink); transition: transform .2s, border-color .2s; }
+.ov-card:hover, .ov-card:focus-visible { transform: translateY(-3px); border-color: var(--sand); outline: none; }
+.ov-card.cur { border-color: var(--sand); box-shadow: 0 0 0 2px var(--sand); }
+.ov-card .no { font: 700 28px var(--mono); color: var(--sand); }
+.ov-card .tt { font-size: 18px; font-weight: 700; }
+.help { width: min(620px, 100%); background: #071a20; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; padding: 28px 32px; }
+.help h2 { font-size: 22px; margin-bottom: 18px; }
+.help dl { display: grid; grid-template-columns: 150px 1fr; gap: 10px 18px; margin: 0; font-size: 15px; }
+.help dt { text-align: right; }
+.help dd { margin: 0; color: #b8c6c9; }
+.help p { margin-top: 20px; font-size: 13px; color: #8aa1a6; }
+
+@media (prefers-reduced-motion: reduce) {
+  #bg .blob, .spin, [data-spin] { animation: none !important; }
+}
+/* =====================================================================
+   Themes. Dark tokens are the :root defaults at the top of the file.
+   Light swaps the neutrals and darkens accents for text on a light page.
+   Per-deck light accents: define --sand-light, --coral-light, --teal-2-light,
+   --sky-light (and optionally --bg-light, --ink-light, ...) in DECK_CSS.
+   Code cards, terminals and recreated app screens keep their own colours.
+   ===================================================================== */
+:root { --page: #020c0e; --panel: rgba(255,255,255,.04); --ink-2: #cfd8da; --on-accent: #2b130b; color-scheme: dark; }
+:root[data-theme="light"] {
+  color-scheme: light;
+  --page: var(--page-light, #e4dfd3);
+  --bg: var(--bg-light, #f5f1e8);
+  --bg-2: var(--bg-2-light, #ffffff);
+  --ink: var(--ink-light, #132a30);
+  --ink-2: var(--ink-2-light, #2c4247);
+  --muted: var(--muted-light, #566b70);
+  --faint: var(--faint-light, rgba(19,42,48,.13));
+  --panel: var(--panel-light, #ffffff);
+  --sand: var(--sand-light, #b8801c);
+  --coral: var(--coral-light, #cf5434);
+  --teal-2: var(--teal-2-light, #1f8577);
+  --sky: var(--sky-light, #2a7ca3);
+  --on-accent: var(--on-accent-light, #ffffff);   /* text on --sand buttons/pills */
+}
+:root[data-theme="light"], :root[data-theme="light"] body { background: var(--page); }
+:root[data-theme="light"] #bg .blob { opacity: .14 !important; }
+:root[data-theme="light"] #bg .b3 { opacity: .1 !important; }
+:root[data-theme="light"] kbd { border-color: rgba(19,42,48,.3); }
+:root[data-theme="light"] .chip { background: var(--panel); box-shadow: 0 1px 2px rgba(19,42,48,.06), 0 6px 18px rgba(19,42,48,.06); }
+:root[data-theme="light"] .steps li { color: var(--muted); }
+:root[data-theme="light"] .steps li.now { color: var(--ink); }
+:root[data-theme="light"] .steps li .bx { border-color: #9db0b4; }
+:root[data-theme="light"] .src { color: var(--muted); }
+:root[data-theme="light"] .browser { box-shadow: 0 40px 80px rgba(19,42,48,.22), 0 0 0 1px rgba(19,42,48,.1); }
+
+/* Presenter chrome */
+:root[data-theme="light"] #dock { background: #ffffff; border-top-color: rgba(19,42,48,.1); }
+:root[data-theme="light"] #bar, :root[data-theme="light"] #bar button { color: #2c4247; }
+:root[data-theme="light"] #bar button:hover { background: rgba(19,42,48,.07); color: #000; }
+:root[data-theme="light"] #bar button.on { color: var(--sand); }
+:root[data-theme="light"] #bar .grp { background: rgba(19,42,48,.05); }
+:root[data-theme="light"] #bar .sep { background: rgba(19,42,48,.14); }
+:root[data-theme="light"] #scrub-track { background: rgba(19,42,48,.12); }
+:root[data-theme="light"] #time { color: #566b70; }
+:root[data-theme="light"] #progress { background: rgba(19,42,48,.08); }
+:root[data-theme="light"] .sb { color: #2c4247; }
+:root[data-theme="light"] .sb.cur .cap { color: #000; }
+:root[data-theme="light"] .sb .mini { outline-color: rgba(19,42,48,.16); }
+:root[data-theme="light"] .sb.cur .mini { outline-color: var(--sand); }
+:root[data-theme="light"] #strip { scrollbar-color: #c9c2b3 transparent; }
+:root[data-theme="light"] .overlay { background: rgba(228,223,211,.92); }
+:root[data-theme="light"] .ov-card { background: #fff; color: var(--ink); border-color: rgba(19,42,48,.14); }
+:root[data-theme="light"] .ov-card .no { color: var(--sand); }
+:root[data-theme="light"] .help { background: #fff; color: var(--ink); border-color: rgba(19,42,48,.14); }
+:root[data-theme="light"] .help dd { color: #44585d; }
+:root[data-theme="light"] #toast { background: #fff; color: var(--ink); border-color: rgba(19,42,48,.14); }
+
+/* =====================================================================
+   Deck-specific styles
+   ===================================================================== */
+/* {{DECK_CSS}} */
+</style>
+</head>
+<body>
+
+<div id="main">
+<div id="hold-hint">Holding at a beat. Press → or Space to continue</div>
+<div id="stage" aria-live="polite">
+  <div id="bg"><div class="grid"></div><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+
+
+  <!-- {{SLIDES}}: one <section class="slide" data-id="..." data-title="..."> per slide -->
+
+</div>
+</div>
+
+<!-- ============================== PRESENTER CHROME ============================== -->
+<div id="progress"><div id="progress-fill"></div></div>
+<div id="toast"></div>
+
+<div id="dock">
+<div id="bar" role="toolbar" aria-label="Presentation controls">
+  <span class="grp">
+    <button id="b-prev" title="Previous slide (←)" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M15.4 4.6L8 12l7.4 7.4 1.4-1.4-6-6 6-6z"/></svg></button>
+    <button id="b-play" title="Play / pause (Space)" aria-label="Play or pause"><svg viewBox="0 0 24 24"><path id="i-play" d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg><span id="play-label">Pause</span></button>
+    <button id="b-next" title="Next beat / slide (→)" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M8.6 4.6L16 12l-7.4 7.4L7.2 18l6-6-6-6z"/></svg></button>
+  </span>
+  <span id="counter">1 / 11</span>
+  <span class="sep"></span>
+  <div id="scrub" title="Scrub this slide's timeline">
+    <div id="scrub-track"><div id="scrub-fill"></div><div id="scrub-beats"></div></div>
+    <input id="scrub-input" type="range" min="0" max="1000" step="1" value="0" aria-label="Slide timeline">
+  </div>
+  <span id="time">0.0 / 0.0s</span>
+  <span class="sep"></span>
+  <span class="grp" title="Playback speed (+ / −, 0 resets)">
+    <button id="b-slower" aria-label="Slower"><b>−</b></button>
+    <button id="speed" title="Click to reset to 1×" aria-label="Playback speed">1×</button>
+    <button id="b-faster" aria-label="Faster"><b>+</b></button>
+  </span>
+  <button id="b-hold" title="Hold at beats (S)" aria-label="Toggle holding at beats">
+    <svg viewBox="0 0 24 24"><path d="M6 3h2v18H6zM10 5l10 7-10 7z" opacity=".9"/></svg><span>Holds</span></button>
+  <button id="b-auto" title="Auto-advance slides (A)" aria-label="Toggle auto-advance">
+    <svg viewBox="0 0 24 24"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg><span>Auto</span></button>
+  <button id="b-replay" title="Replay slide (R)" aria-label="Replay slide"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
+  <button id="b-end" title="Skip to end of slide (E)" aria-label="Skip to end of slide"><svg viewBox="0 0 24 24"><path d="M5 5l9 7-9 7zM16 5h3v14h-3z"/></svg></button>
+  <button id="b-overview" title="Overview (O)" aria-label="Slide overview"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z"/></svg></button>
+  <button id="b-full" title="Fullscreen (F)" aria-label="Fullscreen"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zM14 4h6v6h-2V6h-4zM4 14h2v4h4v2H4zM18 14h2v6h-6v-2h4z"/></svg></button>
+  <button id="b-theme" title="Light / dark theme (T)" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24"><path id="i-theme" d=""/></svg><span id="theme-label">Dark</span></button>
+  <button id="b-dock" title="Hide controls &amp; storyboard for a clean view (D)" aria-label="Hide dock"><svg viewBox="0 0 24 24"><path d="M3 4h18v16H3zM5 6v8h14V6z"/></svg><span>Clean view</span></button>
+  <button id="b-notes" title="Speaker notes in a separate window (N). Share only the deck window." aria-label="Open speaker notes"><svg viewBox="0 0 24 24"><path d="M5 3h11l4 4v14H5zM8 9h8v2H8zM8 13h8v2H8zM8 17h5v2H8z"/></svg><span>Notes</span></button>
+  <button id="b-help" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><b>?</b></button>
+</div>
+<div id="strip" role="list" aria-label="Storyboard"></div>
+</div>
+
+<div id="overview" class="overlay" hidden><div class="ov-grid"></div></div>
+<div id="help" class="overlay" hidden>
+  <div class="help">
+    <h2>Presenter controls</h2>
+    <dl>
+      <dt><kbd>→</kbd> <kbd>PgDn</kbd></dt><dd>Next beat, or next slide when the slide is finished</dd>
+      <dt><kbd>←</kbd> <kbd>PgUp</kbd></dt><dd>Previous slide (shown finished)</dd>
+      <dt><kbd>Space</kbd></dt><dd>Play / pause (or continue from a beat)</dd>
+      <dt><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd></dt><dd>Faster / slower / normal speed (0.25× to 2×)</dd>
+      <dt><kbd>R</kbd> <kbd>E</kbd></dt><dd>Replay slide / skip to its end state</dd>
+      <dt><kbd>S</kbd></dt><dd>Toggle holding at beats (good for live talks)</dd>
+      <dt><kbd>A</kbd></dt><dd>Toggle auto-advance (good for a kiosk loop)</dd>
+      <dt><kbd>O</kbd> <kbd>F</kbd></dt><dd>Slide overview / fullscreen</dd>
+      <dt><kbd>D</kbd></dt><dd>Show / hide the controls and storyboard dock</dd>
+      <dt><kbd>T</kbd></dt><dd>Switch between light and dark theme</dd>
+      <dt><kbd>N</kbd></dt><dd>Open speaker notes in a separate window. In Teams or Zoom, share only the deck window.</dd>
+      <dt><kbd>Home</kbd> <kbd>End</kbd></dt><dd>First / last slide</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close this panel</dd>
+    </dl>
+    <p>Tip: link straight to a slide with <code>#slide-7</code>. Coral ticks on the timeline mark beats.</p>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ===================================================================
+     Deck configuration: set from the interview's controls preset.
+       Live presenter: { holds: true,  auto: false, loop: false, dock: true  }
+       Kiosk loop:     { holds: false, auto: true,  loop: true,  dock: false }
+       Shareable link: { holds: false, auto: false, loop: false, dock: true  }
+     =================================================================== */
+  const CONFIG = {
+    holds: true,       // pause at tl.beat() markers until → / Space
+    auto: false,       // advance to the next slide when a slide finishes
+    loop: false,       // with auto: go back to slide 1 after the last slide
+    dock: true,        // show the control dock + storyboard on load (D toggles)
+    autoDelay: 2500,   // ms to linger on a finished slide before auto-advancing
+    talkMinutes: 10,   // target talk length, shown by the timer in the speaker-notes window
+  };
+
+  /* ===================================================================
+     Tiny helpers
+     =================================================================== */
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const ease = {
+    linear: p => p,
+    inOut: p => (p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2),
+    out: p => 1 - Math.pow(1 - p, 3),
+  };
+
+  /* Speaker notes: the same file opened as index.html#notes becomes the speaker view,
+     synced to the deck window (postMessage, with BroadcastChannel to reconnect). */
+  const NOTES_MODE = /^#notes\b/.test(location.hash);
+  const CHANNEL = 'deck-sync:' + location.pathname;
+
+  const stage = $('#stage');
+  const slides = $$('.slide', stage);
+  /* {{PRERENDER}}: optional code that generates repeated markup (shared screens, icon rows,
+     leaderboards) into the slides BEFORE they are snapshotted. Runs once, before any builder. */
+
+  const originals = slides.map(s => s.innerHTML);
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
+
+  const state = {
+    i: 0, t: 0, rate: 1,
+    playing: true, holding: false,
+    holds: CONFIG.holds, auto: CONFIG.auto,
+    tl: null, beatIdx: 0, doneAt: null,
+  };
+
+  /* ===================================================================
+     Timeline: a clock-driven list of cues and tweens.
+     Everything JS-animated runs off this clock, so pause, speed and
+     seeking all just work. CSS animations are synced to the same clock.
+     =================================================================== */
+  class Timeline {
+    constructor() { this.items = []; this.cur = 0; this.beats = []; this.cues = []; }
+    wait(ms) { this.cur += ms; return this; }
+    do(fn) { this.items.push({ t: this.cur, run: fn }); return this; }
+    /** setup() runs when the tween starts and returns update(p). */
+    tw(dur, setup, e = ease.inOut, advance = true) {
+      this.items.push({ t: this.cur, dur: Math.max(1, dur), setup, e });
+      if (advance) this.cur += dur;
+      return this;
+    }
+    /** A hold point. The optional label is the presenter's cue, shown in the speaker-notes window. */
+    beat(label) { this.beats.push(this.cur); if (label) this.cues.push({ t: this.cur, label, hold: true }); return this; }
+    /** A talking point at the current time, without pausing playback. */
+    cue(label) { this.cues.push({ t: this.cur, label, hold: false }); return this; }
+    finalize() {
+      this.items.sort((a, b) => a.t - b.t);
+      this.dur = Math.max(this.cur, ...this.items.map(it => it.t + (it.dur || 0)));
+      return this;
+    }
+  }
+
+  function process(target) {
+    for (const it of state.tl.items) {
+      if (it.t > target) break;
+      if (!it.started) {
+        it.started = true;
+        if (it.run) { it.run(); continue; }
+        it.update = it.setup() || (() => {});
+      }
+      if (it.update && !it.finished) {
+        const p = clamp((target - it.t) / it.dur, 0, 1);
+        it.update(it.e(p));
+        if (p >= 1) it.finished = true;
+      }
+    }
+  }
+
+  function build(i) {
+    const s = slides[i];
+    s.innerHTML = originals[i];
+    const tl = new Timeline();
+    (builders[s.dataset.id] || (() => {}))(s, tl);
+    return tl.finalize();
+  }
+
+  function stageAnimations() {
+    return stage.getAnimations({ subtree: true });
+  }
+
+  function finishAnimations() {
+    for (const a of slides[state.i].getAnimations({ subtree: true })) {
+      try {
+        if (a.effect && a.effect.getComputedTiming().iterations !== Infinity) a.finish();
+      } catch (_) { /* infinite or detached */ }
+    }
+  }
+
+  function syncAnimations() {
+    for (const a of stageAnimations()) {
+      if (a.playbackRate !== state.rate) a.playbackRate = state.rate;
+      if (!state.playing && a.playState === 'running') a.pause();
+      else if (state.playing && a.playState === 'paused') a.play();
+    }
+  }
+
+  /* ===================================================================
+     Navigation
+     =================================================================== */
+  function go(i, { atEnd = false } = {}) {
+    i = clamp(i, 0, slides.length - 1);
+    if (i !== state.i) slides[state.i].innerHTML = originals[state.i];
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    Object.assign(state, { i, t: 0, holding: false, beatIdx: 0, doneAt: null });
+    state.tl = build(i);
+    if (atEnd || reducedMotion) seek(state.tl.dur);
+    else process(0);
+    drawBeats();
+    try { history.replaceState(null, '', '#slide-' + (i + 1)); } catch (_) {}
+    updateUI(true);
+  }
+
+  function seek(target) {
+    target = clamp(target, 0, state.tl.dur);
+    if (target < state.t) {
+      state.tl = build(state.i);
+      state.t = 0;
+    }
+    process(target);
+    state.t = target;
+    state.beatIdx = state.tl.beats.filter(b => b <= target).length;
+    state.holding = false;
+    state.doneAt = null;
+    finishAnimations();
+    updateUI();
+  }
+
+  function release() {
+    state.holding = false;
+    state.beatIdx++;
+    state.playing = true;
+  }
+
+  function next() {
+    const tl = state.tl;
+    if (state.holding) { release(); return; }
+    if (state.t < tl.dur - 1) {
+      const b = tl.beats.find(b => b > state.t + 1);
+      seek(b != null ? b : tl.dur);
+      state.playing = true;
+      return;
+    }
+    if (state.i < slides.length - 1) go(state.i + 1);
+  }
+
+  function prev() {
+    if (state.i > 0) go(state.i - 1, { atEnd: true });
+    else go(0);
+  }
+
+  function togglePlay() {
+    // Play/pause never restarts anything: replaying is explicit (R, ↺, or a storyboard click).
+    if (state.holding) { release(); }
+    else if (state.t >= state.tl.dur) { toast('End of slide: → for next, R to replay'); }
+    else { state.playing = !state.playing; }
+    updateUI();
+  }
+
+  function setRate(r) {
+    state.rate = r;
+    toast(`Speed ${r}×`);
+    updateUI();
+  }
+  const faster = () => setRate(SPEEDS[Math.min(SPEEDS.length - 1, SPEEDS.indexOf(state.rate) + 1)]);
+  const slower = () => setRate(SPEEDS[Math.max(0, SPEEDS.indexOf(state.rate) - 1)]);
+
+  /* ===================================================================
+     Main loop
+     =================================================================== */
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(100, now - last);
+    last = now;
+    const tl = state.tl;
+
+    if (tl && state.playing && !state.holding) {
+      if (state.t < tl.dur) {
+        let nt = state.t + dt * state.rate;
+        if (state.holds && state.beatIdx < tl.beats.length && nt >= tl.beats[state.beatIdx]) {
+          nt = tl.beats[state.beatIdx];
+          state.holding = true;
+        }
+        process(nt);
+        state.t = nt;
+        if (!state.holds) {
+          while (state.beatIdx < tl.beats.length && tl.beats[state.beatIdx] < state.t) state.beatIdx++;
+        }
+      } else if (state.auto && (state.i < slides.length - 1 || CONFIG.loop)) {
+        if (state.doneAt == null) state.doneAt = now;
+        if (now - state.doneAt > CONFIG.autoDelay / state.rate) go((state.i + 1) % slides.length);
+      }
+    }
+
+    syncAnimations();
+    updateUI();
+    requestAnimationFrame(frame);
+  }
+
+  /* ===================================================================
+     Animation helpers used by the slide builders
+     =================================================================== */
+  function show(tl, els, gap = 0) {
+    for (const el of [].concat(els)) {
+      tl.do(() => el.classList.add('in'));
+      if (gap) tl.wait(gap);
+    }
+    return tl;
+  }
+
+  function bump(el) {
+    el.classList.remove('bump');
+    void el.offsetWidth;
+    el.classList.add('bump');
+  }
+
+  /** Position of el relative to root, ignoring transforms. */
+  function offsetIn(el, root) {
+    // SVG elements (icons!) have no offsetLeft/offsetParent: measure them on screen
+    // and convert back into root's local, untransformed coordinates.
+    if (!(el instanceof HTMLElement)) {
+      const r = el.getBoundingClientRect(), rr = root.getBoundingClientRect();
+      const k = (rr.width / (root.offsetWidth || 1)) || 1;
+      return { x: (r.left - rr.left) / k, y: (r.top - rr.top) / k, w: r.width / k, h: r.height / k };
+    }
+    let x = 0, y = 0, n = el;
+    while (n && n !== root) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+    // offsets ignore transforms; add the current translate of any .scroller in between
+    for (let a = el.parentElement; a && a !== root; a = a.parentElement) {
+      if (a.classList.contains('scroller')) {
+        const m = new DOMMatrixReadOnly(getComputedStyle(a).transform);
+        x += m.m41; y += m.m42;
+      }
+    }
+    return { x, y, w: el.offsetWidth, h: el.offsetHeight };
+  }
+
+  function resolve(target, root) {
+    return typeof target === 'string' ? $(target, root) : target;
+  }
+
+  function placeCursor(app, x, y) {
+    const c = $('.cursor', app);
+    c.style.transform = `translate(${x}px, ${y}px)`;
+    c.dataset.x = x; c.dataset.y = y;
+  }
+
+  function moveTo(tl, app, target, dur = 700, fx = .5, fy = .55) {
+    tl.tw(dur, () => {
+      const c = $('.cursor', app);
+      const el = resolve(target, app);
+      const o = el ? offsetIn(el, app) : null;
+      const sx = +c.dataset.x || 0, sy = +c.dataset.y || 0;
+      const tx = o ? o.x + o.w * fx : NaN, ty = o ? o.y + o.h * fy : NaN;
+      if (!isFinite(tx) || !isFinite(ty)) {
+        // Fail loudly: a NaN position would freeze the cursor for the rest of the slide.
+        console.error('moveTo: cannot place cursor on target', target);
+        window.__deckWarnings = (window.__deckWarnings || []).concat('moveTo target not measurable: ' + target);
+        return () => {};
+      }
+      return p => placeCursor(app, sx + (tx - sx) * p, sy + (ty - sy) * p);
+    });
+  }
+
+  function click(tl, app, pressEl) {
+    tl.do(() => {
+      const c = $('.cursor', app);
+      c.classList.remove('down'); void c.offsetWidth; c.classList.add('down');
+      const r = document.createElement('span');
+      r.className = 'ripple';
+      r.style.left = c.dataset.x + 'px';
+      r.style.top = c.dataset.y + 'px';
+      app.appendChild(r);
+      if (pressEl) resolve(pressEl, app).classList.add('press');
+    }).wait(150);
+    if (pressEl) tl.do(() => resolve(pressEl, app).classList.remove('press'));
+    tl.wait(80);
+  }
+
+  /** cls: 'typing' = thin app caret (inside the fake browser), 'caret' = deck caret. */
+  function type(tl, el, text, cps = 16, cls = 'typing') {
+    tl.do(() => el.classList.add(cls));
+    tl.tw(text.length * 1000 / cps, () => p => { el.textContent = text.slice(0, Math.round(p * text.length)); }, ease.linear);
+    tl.do(() => el.classList.remove(cls));
+  }
+
+  function countUp(tl, el, from, to, dur = 800, fmt = n => String(n)) {
+    tl.tw(dur, () => p => { el.textContent = fmt(Math.round(from + (to - from) * p)); }, ease.out, false);
+  }
+
+  function zoom(tl, app, target, scale = 1.6, dur = 900) {
+    tl.tw(dur, () => {
+      const vp = app.parentElement;
+      const W = vp.clientWidth, H = vp.clientHeight;
+      const fs = +(app.dataset.s || 1), fx = +(app.dataset.tx || 0), fy = +(app.dataset.ty || 0);
+      let ts = 1, tx = 0, ty = 0;
+      if (target) {
+        const o = offsetIn(resolve(target, app), app);
+        ts = scale;
+        tx = clamp(W / 2 - (o.x + o.w / 2) * ts, W - app.offsetWidth * ts, 0);
+        ty = clamp(H / 2 - (o.y + o.h / 2) * ts, H - app.offsetHeight * ts, 0);
+      }
+      return p => {
+        const S = fs + (ts - fs) * p, X = fx + (tx - fx) * p, Y = fy + (ty - fy) * p;
+        app.style.transform = `translate(${X}px, ${Y}px) scale(${S})`;
+        app.dataset.s = S; app.dataset.tx = X; app.dataset.ty = Y;
+      };
+    });
+  }
+
+  function callout(tl, s, idx) {
+    tl.do(() => $$('.callout', s).forEach((c, k) => c.classList.toggle('show', k === idx)));
+  }
+
+  function step(tl, s, n) {
+    tl.do(() => $$('.steps li', s).forEach((li, k) => {
+      li.classList.toggle('done', k < n);
+      li.classList.toggle('now', k === n);
+    }));
+  }
+
+  function confetti(container, n = 90, ox = .5, oy = .45) {
+    const cs = getComputedStyle(document.documentElement);
+    const colors = ['--sand', '--coral', '--teal-2', '--sky'].map(v => cs.getPropertyValue(v).trim() || '#999').concat('#ffffff');
+    for (let i = 0; i < n; i++) {
+      const d = document.createElement('i');
+      d.className = 'confetto';
+      const a = Math.random() * Math.PI * 2, v = 160 + Math.random() * 420;
+      d.style.setProperty('--dx', Math.cos(a) * v + 'px');
+      d.style.setProperty('--dy', Math.sin(a) * v * .7 - 220 + 'px');
+      d.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg');
+      d.style.left = ox * 100 + '%';
+      d.style.top = oy * 100 + '%';
+      d.style.background = colors[i % colors.length];
+      d.style.animationDelay = Math.round(Math.random() * 150) + 'ms';
+      container.appendChild(d);
+    }
+  }
+
+  /* ===================================================================
+     Slide builders: one per data-id
+     =================================================================== */
+  /* {{HELPERS}}: deck-specific helper functions shared by several builders
+     (e.g. a tapAndScore(tl, app, ...) macro). Plain functions in this scope. */
+
+  const builders = {
+    /* {{BUILDERS}}: one entry per slide data-id, e.g. title(s, tl) { ... }, */
+  };
+
+  /* ===================================================================
+     Presenter UI
+     =================================================================== */
+  const ui = {
+    bar: $('#bar'), play: $('#i-play'), counter: $('#counter'),
+    scrub: $('#scrub-input'), scrubFill: $('#scrub-fill'), beats: $('#scrub-beats'),
+    time: $('#time'), speed: $('#speed'), hold: $('#b-hold'), auto: $('#b-auto'),
+    progress: $('#progress-fill'), hint: $('#hold-hint'),
+    overview: $('#overview'), help: $('#help'), toast: $('#toast'),
+    strip: $('#strip'), playLabel: $('#play-label'), main: $('#main'),
+  };
+  let stripCards = [];
+  const PLAY = 'M7 4l13 8-13 8z', PAUSE = 'M6 4h4v16H6zM14 4h4v16h-4z';
+  let scrubbing = false;
+
+  function updateUI() {
+    const tl = state.tl;
+    if (!tl) return;
+    const frac = tl.dur ? state.t / tl.dur : 1;
+    ui.counter.textContent = `${state.i + 1} / ${slides.length}`;
+    ui.progress.style.width = ((state.i + frac) / slides.length * 100) + '%';
+    ui.scrubFill.style.width = (frac * 100) + '%';
+    if (!scrubbing) { ui.scrub.max = Math.round(tl.dur); ui.scrub.value = Math.round(state.t); }
+    ui.time.textContent = `${(state.t / 1000).toFixed(1)} / ${(tl.dur / 1000).toFixed(1)}s`;
+    const playing = state.playing && !state.holding && state.t < tl.dur;
+    ui.play.setAttribute('d', playing ? PAUSE : PLAY);
+    ui.playLabel.textContent = state.holding ? 'Continue' : playing ? 'Pause' : (state.t >= tl.dur ? 'Done' : 'Play');
+    stripCards.forEach((c, k) => {
+      const isCur = k === state.i;
+      if (c.classList.contains('cur') !== isCur) {
+        c.classList.toggle('cur', isCur);
+        c.setAttribute('aria-current', isCur ? 'step' : 'false');
+        if (isCur) c.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+      c.classList.toggle('seen', k < state.i);
+      c._bar.style.width = (k < state.i ? 100 : isCur ? frac * 100 : 0) + '%';
+    });
+    ui.speed.textContent = state.rate + '×';
+    ui.hold.classList.toggle('on', state.holds);
+    ui.auto.classList.toggle('on', state.auto);
+    ui.hint.classList.toggle('show', state.holding);
+  }
+
+  function drawBeats() {
+    const tl = state.tl;
+    ui.beats.innerHTML = tl.beats.map(b => `<i style="left:${(b / tl.dur) * 100}%"></i>`).join('');
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    ui.toast.textContent = msg;
+    ui.toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 1100);
+  }
+
+  function fit() {
+    const W = ui.main.clientWidth, H = ui.main.clientHeight;
+    const s = Math.min(W / 1600, H / 900);
+    stage.style.transform = `translate(${(W - 1600 * s) / 2}px, ${(H - 900 * s) / 2}px) scale(${s})`;
+  }
+
+  /** Storyboard: a live, static mini-render of every slide. */
+  function buildStrip() {
+    ui.strip.innerHTML = '';
+    stripCards = slides.map((s, k) => {
+      const card = document.createElement('button');
+      card.className = 'sb';
+      card.setAttribute('role', 'listitem');
+      card.title = `Go to slide ${k + 1}: ${s.dataset.title}`;
+      const mini = document.createElement('div');
+      mini.className = 'mini';
+      const inner = document.createElement('div');
+      inner.className = 'inner';
+      const clone = s.cloneNode(false);
+      clone.classList.add('active');   // so .x.active layout rules apply in the thumbnail
+      clone.innerHTML = originals[k];
+      inner.appendChild(clone);
+      const bar = document.createElement('div');
+      bar.className = 'bar2';
+      mini.append(inner, bar);
+      const cap = document.createElement('div');
+      cap.className = 'cap';
+      cap.innerHTML = `<b>${String(k + 1).padStart(2, '0')}</b><span></span>`;
+      cap.lastChild.textContent = s.dataset.title;
+      card.append(mini, cap);
+      card._bar = bar;
+      card.addEventListener('click', () => { state.playing = true; go(k); card.blur(); });
+      ui.strip.appendChild(card);
+      return card;
+    });
+  }
+
+  const SUN = 'M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM11 1h2v3h-2zM11 20h2v3h-2zM1 11h3v2H1zM20 11h3v2h-3zM4.2 5.6l1.4-1.4 2.1 2.1-1.4 1.4zM16.3 17.7l1.4-1.4 2.1 2.1-1.4 1.4zM4.2 18.4l2.1-2.1 1.4 1.4-2.1 2.1zM16.3 6.3l2.1-2.1 1.4 1.4-2.1 2.1z';
+  const MOON = 'M21 14.5A9 9 0 0 1 9.5 3a9 9 0 1 0 11.5 11.5z';
+  function applyTheme(t, save = true) {
+    document.documentElement.dataset.theme = t;
+    // The button shows the theme you would switch TO.
+    $('#i-theme').setAttribute('d', t === 'light' ? MOON : SUN);
+    $('#theme-label').textContent = t === 'light' ? 'Dark' : 'Light';
+    if (save) { try { localStorage.setItem('deck-theme', t); } catch (_) {} }
+  }
+  function toggleTheme() {
+    applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
+    toast(document.documentElement.dataset.theme === 'light' ? 'Light theme' : 'Dark theme');
+  }
+
+  function toggleDock() {
+    document.body.classList.toggle('clean');
+    fit();
+    toast(document.body.classList.contains('clean') ? 'Clean view: press D for controls' : 'Controls shown');
+  }
+
+  function openOverlay(el) {
+    closeOverlays();
+    el.hidden = false;
+    if (el === ui.overview) {
+      const grid = $('.ov-grid', el);
+      grid.innerHTML = slides.map((s, k) =>
+        `<button class="ov-card${k === state.i ? ' cur' : ''}" data-k="${k}"><span class="no">${String(k + 1).padStart(2, '0')}</span><span class="tt">${s.dataset.title}</span></button>`).join('');
+      const cur = $('.ov-card.cur', grid);
+      if (cur) cur.focus();
+    }
+    showBar();
+  }
+  function closeOverlays() { ui.overview.hidden = true; ui.help.hidden = true; }
+  const anyOverlay = () => !ui.overview.hidden || !ui.help.hidden;
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+    else document.exitFullscreen?.();
+  }
+
+  // In clean view the mouse cursor hides itself when idle; the dock never auto-hides.
+  let hideTimer;
+  function showBar() {
+    document.body.style.cursor = '';
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      if (document.body.classList.contains('clean') && !anyOverlay()) document.body.style.cursor = 'none';
+    }, 2600);
+  }
+
+  /* ===================================================================
+     Speaker-notes window (this file opened as #notes). It builds each
+     slide's timeline once to read its cues, mirrors the deck window's
+     state, and sends commands back. Nothing here plays.
+     =================================================================== */
+  function startNotes() {
+    document.body.classList.add('notes-mode');
+    document.title = 'Notes: ' + document.title;
+    const EDIT_KEY = 'deck-notes-edits:' + location.pathname;
+    let edits = {};
+    try { edits = JSON.parse(localStorage.getItem(EDIT_KEY) || '{}') || {}; } catch (_) { edits = {}; }
+    const saveEdits = () => { try { localStorage.setItem(EDIT_KEY, JSON.stringify(edits)); } catch (_) {} };
+
+    const data = slides.map((s, k) => {
+      let tl = null;
+      try { tl = build(k); } catch (err) { console.error('notes: could not build slide', k + 1, err); }
+      const aside = $('.notes', s);
+      return {
+        title: s.dataset.title || 'Slide ' + (k + 1),
+        summary: aside ? aside.innerHTML.trim() : '',
+        cues: tl ? tl.cues.slice().sort((a, b) => a.t - b.t) : [],
+        dur: tl ? tl.dur : 0,
+      };
+    });
+
+    const nv = document.createElement('div');
+    nv.id = 'nv';
+    nv.innerHTML = `
+      <header class="nv-top">
+        <div class="nv-slide"><span class="nv-no">--</span><span class="nv-of"></span><span class="nv-title">Waiting for the deck</span></div>
+        <div class="nv-status"><span class="nv-dot"></span><span class="nv-conn"></span></div>
+        <div class="nv-timer"><span class="nv-elapsed">00:00</span><span class="nv-target"></span><span class="nv-tbar"><i></i></span>
+          <button data-t="toggle">Start</button><button data-t="reset">Reset</button></div>
+        <div class="nv-clock"></div>
+      </header>
+      <main class="nv-main">
+        <section>
+          <div class="nv-label">Talking points</div>
+          <div class="nv-summary" contenteditable="true" spellcheck="true"></div>
+          <div class="nv-label">Cues <small>: highlighted as the slide plays. Click a time to jump the deck there.</small></div>
+          <ol class="nv-cues"></ol>
+          <div class="nv-hold">Holding at a beat: press &rarr; or Space to continue</div>
+        </section>
+        <aside class="nv-side">
+          <div class="nv-label">On screen now</div><div class="nv-mini cur"></div>
+          <div class="nv-label">Next up</div><div class="nv-mini nxt"></div>
+          <div class="nv-nexttitle"></div><div class="nv-nextsum"></div>
+        </aside>
+      </main>
+      <footer class="nv-bar">
+        <button data-c="prev" class="big">&larr; Prev</button>
+        <button data-c="toggle" class="big primary nv-play">Play</button>
+        <button data-c="next" class="big">Next &rarr;</button>
+        <button data-c="replay">Replay slide</button>
+        <span class="nv-sp"></span>
+        <span class="nv-prog"><i></i></span><span class="nv-time"></span>
+        <button data-x="copy">Copy edited notes</button>
+        <button data-x="discard">Discard edits</button>
+      </footer>
+      <textarea class="nv-export" hidden readonly></textarea>`;
+    document.body.appendChild(nv);
+    const q = sel => $(sel, nv);
+
+    // ---- messaging: commands go to the opener (deck) if we have it, else over the channel
+    let bcN = null;
+    try { bcN = new BroadcastChannel(CHANNEL); } catch (_) {}
+    const opener = () => { try { return window.opener && !window.opener.closed ? window.opener : null; } catch (_) { return null; } };
+    function send(type, extra = {}) {
+      const msg = Object.assign({ __deck: CHANNEL, type }, extra);
+      const o = opener();
+      if (o) { try { o.postMessage(msg, '*'); return; } catch (_) {} }
+      if (bcN) { try { bcN.postMessage(msg); } catch (_) {} }
+    }
+    const cmd = (c, extra = {}) => send('cmd', Object.assign({ cmd: c }, extra));
+
+    // ---- talk timer
+    const timer = { started: false, running: false, acc: 0, since: 0 };
+    const elapsed = () => timer.acc + (timer.running ? Date.now() - timer.since : 0);
+    const startTimer = () => { timer.started = true; if (!timer.running) { timer.running = true; timer.since = Date.now(); } };
+    const pauseTimer = () => { if (timer.running) { timer.acc += Date.now() - timer.since; timer.running = false; } };
+    const resetTimer = () => Object.assign(timer, { started: false, running: false, acc: 0, since: 0 });
+    const mmss = ms => { const s = Math.floor(ms / 1000); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+    function renderTimer() {
+      const ms = elapsed(), target = CONFIG.talkMinutes * 60000;
+      q('.nv-elapsed').textContent = mmss(ms);
+      q('.nv-target').textContent = 'of ' + mmss(target);
+      q('.nv-tbar i').style.width = Math.min(100, ms / target * 100) + '%';
+      q('.nv-timer').classList.toggle('over', ms > target);
+      q('[data-t="toggle"]').textContent = timer.running ? 'Pause' : (timer.started ? 'Resume' : 'Start');
+      const d = new Date();
+      q('.nv-clock').textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    // ---- rendering
+    let st = null, lastSeen = 0, shownSlide = -1, lastNow = null;
+    function renderConn() {
+      const live = Date.now() - lastSeen < 3000;
+      nv.classList.toggle('nv-live', live);
+      q('.nv-conn').textContent = live ? 'Synced with the deck'
+        : st ? 'Lost the deck window. Is it still open?'
+        : 'Waiting for the deck. Press N in the deck window.';
+    }
+    function mini(el, k) {
+      el.innerHTML = '';
+      el.style.visibility = k == null ? 'hidden' : '';
+      if (k == null) return;
+      const inner = document.createElement('div');
+      inner.className = 'inner';
+      const clone = slides[k].cloneNode(false);
+      clone.classList.add('active');
+      clone.innerHTML = originals[k];
+      inner.appendChild(clone);
+      el.appendChild(inner);
+    }
+    const editedCue = (k, idx) => edits[k] && edits[k].cues && edits[k].cues[idx] != null;
+    function renderSlide(k) {
+      shownSlide = k; lastNow = null;
+      const d = data[k], e = edits[k] || {};
+      q('.nv-no').textContent = String(k + 1).padStart(2, '0');
+      q('.nv-of').textContent = '/ ' + slides.length;
+      q('.nv-title').textContent = d.title;
+      const sum = q('.nv-summary');
+      sum.innerHTML = e.summary != null ? e.summary : d.summary;
+      sum.classList.toggle('edited', e.summary != null);
+      const ol = q('.nv-cues');
+      ol.innerHTML = d.cues.length ? '' : '<li class="nv-empty">No cues on this slide.</li>';
+      d.cues.forEach((c, idx) => {
+        const li = document.createElement('li');
+        li.className = (c.hold ? 'hold' : '') + (editedCue(k, idx) ? ' edited' : '');
+        li.dataset.t = c.t;
+        li.innerHTML = '<span class="ts" title="Jump the deck to this moment"></span><span class="tx" contenteditable="true" spellcheck="true"></span>';
+        li.firstChild.textContent = (c.t / 1000).toFixed(1) + 's';
+        li.lastChild.textContent = editedCue(k, idx) ? edits[k].cues[idx] : c.label;
+        li.lastChild.dataset.idx = idx;
+        ol.appendChild(li);
+      });
+      mini(q('.nv-mini.cur'), k);
+      mini(q('.nv-mini.nxt'), k + 1 < slides.length ? k + 1 : null);
+      const n = data[k + 1];
+      q('.nv-nexttitle').textContent = n ? String(k + 2).padStart(2, '0') + '  ' + n.title : 'End of the deck';
+      const tmp = document.createElement('div');
+      tmp.innerHTML = n ? ((edits[k + 1] || {}).summary ?? n.summary) : '';
+      q('.nv-nextsum').textContent = tmp.textContent.trim().slice(0, 200);
+    }
+    function render() {
+      if (!st) return;
+      if (st.i !== shownSlide) renderSlide(st.i);
+      const lis = $$('.nv-cues li[data-t]', nv);
+      let now = -1;
+      lis.forEach((li, idx) => { if (+li.dataset.t <= st.t + 1) now = idx; });
+      lis.forEach((li, idx) => { li.classList.toggle('past', idx < now); li.classList.toggle('now', idx === now); });
+      if (lis[now] && lis[now] !== lastNow) { lastNow = lis[now]; lastNow.scrollIntoView({ block: 'nearest' }); }
+      nv.classList.toggle('nv-holding', !!st.holding);
+      const done = st.t >= st.dur - 1;
+      q('.nv-play').textContent = st.holding ? 'Continue' : (st.playing && !done ? 'Pause' : (done ? 'Done' : 'Play'));
+      q('.nv-prog i').style.width = (st.dur ? Math.min(100, st.t / st.dur * 100) : 0) + '%';
+      q('.nv-time').textContent = (st.t / 1000).toFixed(1) + ' / ' + (st.dur / 1000).toFixed(1) + 's';
+    }
+    function onState(msg) {
+      if (!msg || msg.__deck !== CHANNEL || msg.type !== 'state') return;
+      st = msg; lastSeen = Date.now();
+      if (msg.theme && document.documentElement.dataset.theme !== msg.theme) applyTheme(msg.theme, false);
+      if (!timer.started && msg.i > 0) startTimer();   // the talk has started once the deck leaves slide 1
+      render(); renderConn();
+    }
+    addEventListener('message', e => onState(e.data));
+    if (bcN) bcN.onmessage = e => onState(e.data);
+
+    // ---- edits (kept in this browser; "Copy edited notes" produces text to hand back to Claude)
+    function exportEdits() {
+      const lines = [];
+      data.forEach((d, k) => {
+        const e = edits[k];
+        if (!e) return;
+        lines.push(`## Slide ${k + 1}: ${d.title}`);
+        if (e.summary != null) { const t = document.createElement('div'); t.innerHTML = e.summary; lines.push('Talking points: ' + t.innerText.trim()); }
+        if (e.cues) Object.keys(e.cues).sort((a, b) => a - b).forEach(idx => lines.push(`- Cue at ${(d.cues[idx].t / 1000).toFixed(1)}s: ${e.cues[idx]}`));
+        lines.push('');
+      });
+      const text = lines.length ? 'Apply these speaker-note edits to the deck:\n\n' + lines.join('\n') : 'No edits yet.';
+      const ta = q('.nv-export');
+      ta.hidden = false; ta.value = text; ta.focus(); ta.select();
+      try { navigator.clipboard.writeText(text).then(() => toast('Copied. Paste it to Claude to bake the edits into the deck.'), () => {}); } catch (_) {}
+    }
+    nv.addEventListener('input', e => {
+      if (shownSlide < 0) return;
+      const k = shownSlide;
+      edits[k] = edits[k] || {};
+      if (e.target.classList && e.target.classList.contains('nv-summary')) { edits[k].summary = e.target.innerHTML; e.target.classList.add('edited'); }
+      const tx = e.target.closest && e.target.closest('.tx');
+      if (tx) { (edits[k].cues = edits[k].cues || {})[tx.dataset.idx] = tx.textContent; tx.parentElement.classList.add('edited'); }
+      saveEdits();
+    });
+    nv.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (b && b.dataset.c) cmd(b.dataset.c);
+      if (b && b.dataset.t === 'toggle') (timer.running ? pauseTimer() : startTimer());
+      if (b && b.dataset.t === 'reset') resetTimer();
+      if (b && b.dataset.x === 'copy') exportEdits();
+      if (b && b.dataset.x === 'discard' && confirm('Discard all your edits to these notes?')) { edits = {}; saveEdits(); if (st) renderSlide(st.i); }
+      const ts = e.target.closest('.ts');
+      if (ts) cmd('seek', { t: +ts.parentElement.dataset.t });
+      renderTimer();
+    });
+
+    // ---- keys: same as the deck, so a presentation clicker works on either window
+    addEventListener('keydown', e => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.target.closest && e.target.closest('[contenteditable="true"], textarea')) { if (e.key === 'Escape') e.target.blur(); return; }
+      if (e.key === 'Home') { e.preventDefault(); return cmd('goto', { i: 0 }); }
+      if (e.key === 'End') { e.preventDefault(); return cmd('goto', { i: slides.length - 1 }); }
+      const c = { ArrowRight: 'next', PageDown: 'next', Enter: 'next', ArrowLeft: 'prev', PageUp: 'prev', ' ': 'toggle', r: 'replay', R: 'replay', e: 'end', E: 'end' }[e.key];
+      if (c) { e.preventDefault(); cmd(c); }
+    });
+
+    send('hello');
+    setInterval(() => { if (Date.now() - lastSeen > 2000) send('hello'); renderConn(); }, 1000);
+    setInterval(renderTimer, 250);
+    renderTimer(); renderConn();
+
+    // Debug/verification API for the notes window
+    window.deckNotes = { get state() { return st; }, data, cmd, get connected() { return Date.now() - lastSeen < 3000; } };
+  }
+
+  if (NOTES_MODE) { startNotes(); return; }
+
+  // Buttons
+  $('#b-prev').onclick = prev;
+  $('#b-next').onclick = next;
+  $('#b-play').onclick = togglePlay;
+  $('#b-replay').onclick = () => { state.playing = true; go(state.i); };
+  $('#b-end').onclick = () => seek(state.tl.dur);
+  $('#b-overview').onclick = () => (ui.overview.hidden ? openOverlay(ui.overview) : closeOverlays());
+  $('#b-help').onclick = () => (ui.help.hidden ? openOverlay(ui.help) : closeOverlays());
+  $('#b-full').onclick = toggleFullscreen;
+  ui.speed.onclick = () => setRate(1);
+  $('#b-slower').onclick = slower;
+  $('#b-faster').onclick = faster;
+  $('#b-dock').onclick = toggleDock;
+  ui.hold.onclick = () => { state.holds = !state.holds; toast(state.holds ? 'Holding at beats' : 'Playing straight through'); };
+  ui.auto.onclick = () => { state.auto = !state.auto; toast(state.auto ? 'Auto-advance on' : 'Auto-advance off'); };
+  ui.scrub.addEventListener('input', () => { scrubbing = true; seek(+ui.scrub.value); });
+  ui.scrub.addEventListener('change', () => { scrubbing = false; });
+  ui.scrub.addEventListener('pointerup', () => { scrubbing = false; });
+  ui.overview.addEventListener('click', e => {
+    const card = e.target.closest('.ov-card');
+    if (card) { closeOverlays(); state.playing = true; go(+card.dataset.k); }
+    else if (e.target === ui.overview) closeOverlays();
+  });
+  ui.help.addEventListener('click', e => { if (e.target === ui.help) closeOverlays(); });
+
+  // Keyboard
+  addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest && e.target.closest('.ov-card') && e.key === 'Enter') return;
+    const k = e.key;
+    showBar();
+    if (k === 'Escape') { closeOverlays(); return; }
+    if (anyOverlay() && !['o', 'O', '?', 'h', 'H'].includes(k)) return;
+    const handled = {
+      'ArrowRight': next, 'PageDown': next, 'Enter': next,
+      'ArrowLeft': prev, 'PageUp': prev,
+      ' ': togglePlay, 'k': togglePlay, 'K': togglePlay,
+      '+': faster, '=': faster, '-': slower, '_': slower, '0': () => setRate(1),
+      'r': () => { state.playing = true; go(state.i); }, 'R': () => { state.playing = true; go(state.i); },
+      'e': () => seek(state.tl.dur), 'E': () => seek(state.tl.dur),
+      's': () => ui.hold.click(), 'S': () => ui.hold.click(),
+      'a': () => ui.auto.click(), 'A': () => ui.auto.click(),
+      'o': () => $('#b-overview').click(), 'O': () => $('#b-overview').click(),
+      'f': toggleFullscreen, 'F': toggleFullscreen,
+      'd': toggleDock, 'D': toggleDock,
+      't': toggleTheme, 'T': toggleTheme,
+      'n': openNotes, 'N': openNotes,
+      '?': () => $('#b-help').click(), 'h': () => $('#b-help').click(), 'H': () => $('#b-help').click(),
+      'Home': () => go(0), 'End': () => go(slides.length - 1),
+    }[k];
+    if (handled) { e.preventDefault(); handled(); }
+  });
+
+  // Touch: swipe to navigate
+  let touchX = null;
+  addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+  addEventListener('touchend', e => {
+    if (touchX == null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) (dx < 0 ? next : prev)();
+    touchX = null;
+  });
+
+  addEventListener('mousemove', showBar);
+  addEventListener('resize', fit);
+  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(ui.main);
+
+  // Boot
+  $('#b-theme').onclick = toggleTheme;
+  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light', false);
+  if (!CONFIG.dock) document.body.classList.add('clean');
+  buildStrip();
+  fit();
+  const m = location.hash.match(/slide-(\d+)/);
+  go(m ? +m[1] - 1 : 0);
+  showBar();
+  requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+
+  // Verification/debug API: deck.at(slideNumber, ms) jumps there paused (ms omitted = end state).
+  window.deck = {
+    at(n, ms = Infinity) { go(n - 1); state.playing = false; seek(Math.min(ms, state.tl.dur)); return `${state.i + 1}/${slides.length} @ ${Math.round(state.t)}ms`; },
+    get state() { return { slide: state.i + 1, of: slides.length, t: Math.round(state.t), dur: Math.round(state.tl.dur), playing: state.playing, theme: document.documentElement.dataset.theme }; },
+    theme(t) { applyTheme(t, false); return t; },
+    notes() { return openNotes(); },
+  };
+
+  /* ---------- Speaker-notes sync, deck side ----------
+     The deck broadcasts its state (about 10x a second, only when it changes) to the notes window
+     it opened (postMessage) and to any other window of this deck (BroadcastChannel), and obeys
+     commands sent back. Commands arrive by exactly one path, so they never double-fire. */
+  let notesWin = null, lastSent = '', lastSentAt = 0, bc = null;
+  try { bc = new BroadcastChannel(CHANNEL); } catch (_) {}
+  function deckState() {
+    return { __deck: CHANNEL, type: 'state', i: state.i, n: slides.length, t: Math.round(state.t), dur: Math.round(state.tl.dur),
+             playing: state.playing, holding: state.holding, beatIdx: state.beatIdx, rate: state.rate,
+             theme: document.documentElement.dataset.theme };
+  }
+  function sendState(force) {
+    if (!state.tl) return;
+    const msg = deckState(), key = JSON.stringify(msg);
+    // Send on change, plus a heartbeat at least once a second so the notes window knows we're alive.
+    if (!force && key === lastSent && Date.now() - lastSentAt < 1000) return;
+    lastSent = key; lastSentAt = Date.now();
+    if (notesWin && !notesWin.closed) { try { notesWin.postMessage(msg, '*'); } catch (_) {} }
+    if (bc) { try { bc.postMessage(msg); } catch (_) {} }
+  }
+  setInterval(sendState, 100);
+  function onCommand(msg) {
+    if (!msg || msg.__deck !== CHANNEL) return;
+    if (msg.type === 'hello') return sendState(true);
+    if (msg.type !== 'cmd') return;
+    const run = {
+      next, prev, toggle: togglePlay, faster, slower,
+      replay: () => { state.playing = true; go(state.i); },
+      end: () => seek(state.tl.dur),
+      goto: () => { state.playing = true; go(+msg.i || 0); },
+      seek: () => seek(+msg.t || 0),
+    }[msg.cmd];
+    if (run) { run(); sendState(true); }
+  }
+  addEventListener('message', e => onCommand(e.data));
+  if (bc) bc.onmessage = e => onCommand(e.data);
+  function openNotes() {
+    const url = location.href.split('#')[0] + '#notes';
+    notesWin = window.open(url, 'deck-notes', 'width=1200,height=800');
+    if (!notesWin) { toast('Pop-up blocked. Allow pop-ups, or open this file with #notes on the end.'); return false; }
+    setTimeout(() => sendState(true), 500);
+    toast('Speaker notes opened. In Teams or Zoom, share only this deck window.');
+    return true;
+  }
+  $('#b-notes').onclick = openNotes;
+})();
+</script>
+</body>
+</html>
