@@ -87,7 +87,7 @@ Present this as a preset with the option to customise. Every control below is al
 25. **Which controls should be visible?** Play/pause, speed (0.25–2×), scrubber with beat ticks, replay, skip-to-end, storyboard strip, overview grid, fullscreen, light/dark toggle, Clean view, speaker-notes window, help. *Default: all.*
 26. **Replay behaviour:** explicit only (R, ↺, storyboard click), never on Space. *Default: explicit only. Users dislike accidental restarts.*
 27. **Navigation extras:** progress bar, `#slide-N` deep links, touch swipe, keyboard shortcuts overlay. *Default: all on.*
-28. **Accessibility:** respect reduced-motion (show end states), minimum text size for the room. *Default: on, nothing below 16px on the 1600×900 stage (larger for a projector in a big room).*
+28. **Accessibility:** screen-reader support is always built in and checked (`references/accessibility.md`). Ask only about extras: will anyone present or follow along with a screen reader (then keep speaker-notes cues short and test the notes window with one), the minimum text size for the room, and reduced-motion (shows end states). *Default: screen-reader rules on (not optional), nothing below 16px on the 1600×900 stage (larger for a projector), reduced-motion respected.*
 
 ### F. Output, sharing & logistics
 29. **Where should the file go?** *Default: `demo/index.html` in the app's repo, one self-contained file, no dependencies, works offline.*

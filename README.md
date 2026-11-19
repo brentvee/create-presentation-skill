@@ -7,6 +7,7 @@ A Claude Code skill that interviews you ("grill me" style) and then builds an **
 - Play/pause, 0.25–2× speed, scrubber with beat holds, replay, storyboard strip, overview, fullscreen
 - Browser frame or phone frame (for mobile-first apps)
 - Speaker notes in a separate, synced window, for presenting over Teams or Zoom
+- Works with screen readers: hidden content stays hidden, decoration is silent, every control is named, and a live region describes each view. Every deck is checked with a built-in `deck.audit()`. See `references/accessibility.md`.
 
 ## Install
 
@@ -95,5 +96,6 @@ You can edit notes in the notes window while you rehearse. **Copy edited notes**
 | `SKILL.md` | The workflow Claude follows |
 | `references/interview.md` | Question bank, multiple-choice round, spec template |
 | `references/engine.md` | Engine API, helpers, slide patterns, rules, verification script |
+| `references/accessibility.md` | Screen-reader rules: what the engine handles, what each deck must do, how to test |
 | `assets/deck-engine.html` | The presentation runtime template |
 | `assets/example-staydesk-deck.html` | A complete worked example deck (fictional hotel booking app) |

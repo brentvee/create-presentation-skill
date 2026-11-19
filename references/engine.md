@@ -10,7 +10,7 @@
 3. Helpers
 4. CSS primitives
 5. Slide patterns (with pointers into the example)
-6. Rules that prevent the bugs we already hit
+6. Rules that prevent the bugs we already hit (screen-reader rules are in `references/accessibility.md`)
 7. Verification script
 8. Speaker notes (separate synced window)
 
@@ -151,8 +151,9 @@ Open the deck in a browser (built-in browser pane, or Chrome via `file:///…`).
 - `deck.at(n, ms?)` jumps to slide `n` (1-based) at `ms`, or to the end state if `ms` is omitted, and pauses there.
 - `deck.state` reports the current slide, time and theme.
 - `deck.theme('light' | 'dark')` sets the theme without saving it.
+- `deck.audit()` returns the screen-reader accessibility problems in the current view (see `references/accessibility.md`); an empty list means it passes.
 
-Use these instead of simulating keys. Run this in the page. It walks every slide to its end state and reports timings, errors, overflow and stuck cursors:
+Use these instead of simulating keys. Run this in the page. It walks every slide to its end state and reports timings, errors, overflow, stuck cursors, and accessibility issues at the start, middle and end of each slide:
 
 ```js
 window.__errs = []; addEventListener('error', e => __errs.push(e.message));
@@ -171,6 +172,11 @@ for (let i = 1; i <= n; i++) {
   // 3. Cursors stuck at NaN
   const nan = [...act.querySelectorAll('.cursor')].some(c => /NaN/.test(c.style.transform));
   out.push(`${i}: ${deck.state.dur}ms${over ? ' OVERFLOW:' + over : ''}${side ? ' VP-SIDE:' + side : ''}${nan ? ' CURSOR-NaN' : ''}`);
+  // 4. Accessibility at the start, middle and end of the slide (must all be empty)
+  for (const ms of [0, deck.state.dur / 2, Infinity]) {
+    deck.at(i, ms); await wait(60);
+    for (const a of deck.audit()) out.push(`  a11y @${Math.round(Math.min(ms, deck.state.dur))}ms: ${a}`);
+  }
 }
 out.join(' | ') + ' || errors: ' + __errs.join('; ') + ' || warnings: ' + (window.__deckWarnings || []).join('; ')
 ```

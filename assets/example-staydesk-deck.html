@@ -148,6 +148,8 @@ body.notes-mode #main, body.notes-mode #dock, body.notes-mode #progress, body.no
 .nv-cues { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 .nv-cues li { display: grid; grid-template-columns: 70px 1fr; gap: 12px; align-items: baseline; padding: 10px 14px; border-radius: 12px; border: 1px solid transparent; color: var(--muted); font-size: 19px; line-height: 1.45; transition: background .25s, color .25s, border-color .25s; }
 .nv-cues li .ts { font: 600 13px var(--mono); color: var(--muted); cursor: pointer; text-decoration: underline dotted; }
+#nv .nv-cues li .ts { height: auto; padding: 2px 4px; border: 0; background: none; min-width: 0; text-align: left; font: 600 13px var(--mono); color: var(--muted); }
+#nv h1.nv-slide { margin: 0; font: inherit; }
 .nv-cues li .tx { outline: none; border-radius: 6px; }
 .nv-cues li .tx:focus { background: var(--panel); }
 .nv-cues li.past { opacity: .55; }
@@ -321,6 +323,12 @@ body.clean #dock { display: none; }
   font: 13px var(--sans); color: #cfd8da;
 }
 #bar .grp { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border-radius: 11px; background: rgba(255,255,255,.05); }
+/* Visible captions for control groups (referenced by aria-labelledby). */
+.grp-cap, .strip-cap { font: 700 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #8aa1a6; padding: 0 6px 0 8px; white-space: nowrap; }
+.strip-cap { padding: 0 0 2px 2px; }
+/* Readable by screen readers, invisible on screen. */
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+#bar button:focus-visible, .sb:focus-visible .mini, .ov-card:focus-visible { outline: 3px solid var(--sand); outline-offset: 2px; }
 #b-play { min-width: 92px !important; background: var(--sand) !important; color: var(--on-accent) !important; font-weight: 700; }
 #b-play:hover { filter: brightness(1.08); }
 #b-play svg { fill: var(--on-accent); }
@@ -346,7 +354,9 @@ body.clean #dock { display: none; }
 .sb.seen .cap b { color: var(--teal-2); }
 .sb:focus-visible { outline: none; }
 @media (max-width: 1100px) {
-  #bar button > span:not(#play-label) { display: none; }
+  /* Hide text labels visually only: they remain the buttons' accessible names. */
+  #bar button > span:not(#play-label):not(.sr-only), #bar .grp-cap {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
   #time { display: none; }
   #bar .sep { display: none; }
 }
@@ -817,15 +827,17 @@ body.clean #dock { display: none; }
 
 
 /* StayDesk slide surfaces in light mode */
- :root[data-theme="light"] .chip, :root[data-theme="light"] .feat, :root[data-theme="light"] .qcat, :root[data-theme="light"] .qarow, :root[data-theme="light"] .counter, :root[data-theme="light"] .flow, :root[data-theme="light"] .files { background: var(--panel); box-shadow: 0 1px 2px rgba(19,42,48,.06), 0 8px 24px rgba(19,42,48,.06); } :root[data-theme="light"] .feat .num { color: rgba(19,42,48,.06); } :root[data-theme="light"] .file, :root[data-theme="light"] .qcat li { color: var(--ink-2); } :root[data-theme="light"] .file.scan { background: rgba(184,128,28,.12); color: var(--ink); } :root[data-theme="light"] .file .ln, :root[data-theme="light"] .steps li { color: var(--muted); } :root[data-theme="light"] .steps li.now { color: var(--ink); } :root[data-theme="light"] .machine .node rect { fill: #fff; stroke: #9db0b4; } :root[data-theme="light"] .machine .edge { stroke: #9db0b4; } :root[data-theme="light"] .pstep .pn { border-color: #9db0b4; } :root[data-theme="light"] .steps li .bx { border-color: #9db0b4; } :root[data-theme="light"] .browser { box-shadow: 0 40px 80px rgba(19,42,48,.22), 0 0 0 1px rgba(19,42,48,.1); } :root[data-theme="light"] .term, :root[data-theme="light"] .codecard, :root[data-theme="light"] .dialog, :root[data-theme="light"] .spec { box-shadow: 0 30px 60px rgba(19,42,48,.2); }  
+ :root[data-theme="light"] .chip, :root[data-theme="light"] .feat, :root[data-theme="light"] .qcat, :root[data-theme="light"] .qarow, :root[data-theme="light"] .counter, :root[data-theme="light"] .flow, :root[data-theme="light"] .files { background: var(--panel); box-shadow: 0 1px 2px rgba(19,42,48,.06), 0 8px 24px rgba(19,42,48,.06); } :root[data-theme="light"] .feat .num { color: rgba(19,42,48,.06); } :root[data-theme="light"] .file, :root[data-theme="light"] .qcat li { color: var(--ink-2); } :root[data-theme="light"] .file.scan { background: rgba(184,128,28,.12); color: var(--ink); } :root[data-theme="light"] .file .ln, :root[data-theme="light"] .steps li { color: var(--muted); } :root[data-theme="light"] .steps li.now { color: var(--ink); } :root[data-theme="light"] .machine .node rect { fill: #fff; stroke: #9db0b4; } :root[data-theme="light"] .machine .edge { stroke: #9db0b4; } :root[data-theme="light"] .pstep .pn { border-color: #9db0b4; } :root[data-theme="light"] .steps li .bx { border-color: #9db0b4; } :root[data-theme="light"] .browser { box-shadow: 0 40px 80px rgba(19,42,48,.22), 0 0 0 1px rgba(19,42,48,.1); } :root[data-theme="light"] .term, :root[data-theme="light"] .codecard, :root[data-theme="light"] .dialog, :root[data-theme="light"] .spec { box-shadow: 0 30px 60px rgba(19,42,48,.2); }
 </style>
 </head>
 <body>
 
 <div id="main">
-<div id="hold-hint">Holding at a beat. Press → or Space to continue</div>
-<div id="stage" aria-live="polite">
-  <div id="bg"><div class="grid"></div><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div id="hold-hint" aria-hidden="true">Holding at a beat. Press → or Space to continue</div>
+<!-- Accessibility: the stage is NOT a live region (it would read every typed character).
+     Short descriptions of the current view go to #sr-live instead. -->
+<div id="stage" role="region" aria-label="Slides" aria-busy="false">
+  <div id="bg" aria-hidden="true"><div class="grid"></div><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 
 
   <!-- ============================== 1. TITLE ============================== -->
@@ -983,13 +995,13 @@ body.clean #dock { display: none; }
       <div class="dialog fx right">
         <div class="dlg-head"><span class="dlg-dot"></span><span class="dlg-title">Claude has 3 questions</span><span class="dlg-steps"><i></i><i></i><i></i></span></div>
         <div class="dlg-body">
-          <div class="qpanel q">
+          <div class="qpanel q" data-reveal>
             <span class="qh">Deck shape</span>
             <div class="qt">How should the HTML deck relate to the hotel booking app?</div>
             <div class="opt"><span class="rb"></span><div><b>Two files (Recommended)</b><small>A talk deck that links to a separate product demo.</small></div></div>
             <div class="opt pick"><span class="rb"></span><div><b>One deck</b><small>Everything in a single index.html.</small></div></div>
           </div>
-          <div class="qpanel q">
+          <div class="qpanel q" data-reveal>
             <span class="qh">App scope</span>
             <div class="qt">Which features should the app have? Each becomes an animated moment.</div>
             <div class="opt pick"><span class="cb"></span><div><b>Search &amp; results</b><small>Dates and guests in, available rooms out.</small></div></div>
@@ -997,13 +1009,13 @@ body.clean #dock { display: none; }
             <div class="opt"><span class="cb"></span><div><b>Manager dashboard</b><small>Occupancy and revenue charts.</small></div></div>
             <div class="opt pick"><span class="cb"></span><div><b>Booking status list</b><small>Confirmed → Checked in → Checked out.</small></div></div>
           </div>
-          <div class="qpanel q">
+          <div class="qpanel q" data-reveal>
             <span class="qh">Brand name</span>
             <div class="qt">What should the fictional hotel product be called?</div>
             <div class="opt pick"><span class="rb"></span><div><b>Claude picks one</b><small>A name, logo mark and colour palette.</small></div></div>
             <div class="opt"><span class="rb"></span><div><b>I'll name it</b><small>Type it in the Other box.</small></div></div>
           </div>
-          <div class="qpanel qdone"><div class="big-tick">✓</div>That's everything I need.<small>Next: Claude writes the spec.</small></div>
+          <div class="qpanel qdone" data-reveal><div class="big-tick">✓</div>That's everything I need.<small>Next: Claude writes the spec.</small></div>
         </div>
         <div class="dlg-foot"><span class="other">Other…</span><button class="dlg-btn">Next</button></div>
         <div class="cursor fx"><svg width="26" height="32" viewBox="0 0 26 32"><path d="M4 3l18 15.5-8.2.9 4.9 9.4-3.6 1.8-4.8-9.5L4 26z" fill="#111" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></div>
@@ -1161,20 +1173,20 @@ body.clean #dock { display: none; }
                 <div class="fld f-in"><label>Check-in</label><div class="inp"><span class="val" data-ph="mm/dd/yyyy"></span><span class="ico">▦</span></div></div>
                 <div class="fld f-out"><label>Check-out</label><div class="inp"><span class="val" data-ph="mm/dd/yyyy"></span><span class="ico">▦</span></div></div>
                 <div class="fld fld-g"><label>Guests</label><div class="inp g"><span class="val">1</span><span class="ico">▾</span>
-                  <ul class="dd"><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li></ul></div></div>
+                  <ul class="dd" data-reveal><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li></ul></div></div>
                 <div class="fld fld-b"><button class="btn-p">Search</button></div>
               </div>
               <div class="empty" data-mini-hide>Pick your dates and number of guests, then hit <b>Search</b>.</div>
               <div class="results" data-mini-show>
                 <div class="summary"><b class="n">7</b> rooms available · 3 nights · Fri 13 Nov → Mon 16 Nov</div>
                 <div class="rgrid">
-                  <div class="room" data-room="101"><div class="sw standard"><b>STANDARD</b><span>Room 101</span></div><div class="rb"><h3>Garden Twin</h3><div class="mut sm">Sleeps 2</div><div class="am"><i>Wi-Fi</i><i>Garden view</i><i>Desk</i></div><div class="rf"><div><div class="pr">$119<small> / night</small></div><div class="mut sm">$357 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp"><span>BOOKED</span></div></div>
-                  <div class="room" data-room="102"><div class="sw standard"><b>STANDARD</b><span>Room 102</span></div><div class="rb"><h3>City Double</h3><div class="mut sm">Sleeps 2</div><div class="am"><i>Wi-Fi</i><i>Smart TV</i><i>Desk</i></div><div class="rf"><div><div class="pr">$129<small> / night</small></div><div class="mut sm">$387 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp"><span>BOOKED</span></div></div>
-                  <div class="room" data-room="204"><div class="sw deluxe"><b>DELUXE</b><span>Room 204</span></div><div class="rb"><h3>Harbour King</h3><div class="mut sm">Sleeps 2</div><div class="am"><i>Wi-Fi</i><i>Harbour view</i><i>Minibar</i></div><div class="rf"><div><div class="pr">$189<small> / night</small></div><div class="mut sm">$567 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp"><span>BOOKED</span></div></div>
-                  <div class="room" data-room="301"><div class="sw deluxe"><b>DELUXE</b><span>Room 301</span></div><div class="rb"><h3>Loft Studio</h3><div class="mut sm">Sleeps 3</div><div class="am"><i>Wi-Fi</i><i>Kitchenette</i></div><div class="rf"><div><div class="pr">$209<small> / night</small></div><div class="mut sm">$627 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp"><span>BOOKED</span></div></div>
-                  <div class="room" data-room="205" data-booked="1"><div class="sw deluxe"><b>DELUXE</b><span>Room 205</span></div><div class="rb"><h3>Family Deluxe</h3><div class="mut sm">Sleeps 4</div><div class="am"><i>Wi-Fi</i><i>Sofa bed</i><i>Minibar</i></div><div class="rf"><div><div class="pr">$229<small> / night</small></div><div class="mut sm">$687 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp"><span>BOOKED</span></div></div>
-                  <div class="room" data-room="401"><div class="sw suite"><b>SUITE</b><span>Room 401</span></div><div class="rb"><h3>Skyline Suite</h3><div class="mut sm">Sleeps 2</div><div class="am"><i>Wi-Fi</i><i>Balcony</i><i>Bathtub</i></div><div class="rf"><div><div class="pr">$349<small> / night</small></div><div class="mut sm">$1,047 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp"><span>BOOKED</span></div></div>
-                  <div class="room" data-room="402" data-booked="1"><div class="sw suite"><b>SUITE</b><span>Room 402</span></div><div class="rb"><h3>Penthouse</h3><div class="mut sm">Sleeps 6</div><div class="am"><i>Wi-Fi</i><i>Terrace</i><i>Butler</i></div><div class="rf"><div><div class="pr">$599<small> / night</small></div><div class="mut sm">$1,797 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp"><span>BOOKED</span></div></div>
+                  <div class="room" data-reveal data-room="101"><div class="sw standard"><b>STANDARD</b><span>Room 101</span></div><div class="rb"><h3>Garden Twin</h3><div class="mut sm">Sleeps 2</div><div class="am"><i>Wi-Fi</i><i>Garden view</i><i>Desk</i></div><div class="rf"><div><div class="pr">$119<small> / night</small></div><div class="mut sm">$357 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp" data-decor><span>BOOKED</span></div></div>
+                  <div class="room" data-reveal data-room="102"><div class="sw standard"><b>STANDARD</b><span>Room 102</span></div><div class="rb"><h3>City Double</h3><div class="mut sm">Sleeps 2</div><div class="am"><i>Wi-Fi</i><i>Smart TV</i><i>Desk</i></div><div class="rf"><div><div class="pr">$129<small> / night</small></div><div class="mut sm">$387 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp" data-decor><span>BOOKED</span></div></div>
+                  <div class="room" data-reveal data-room="204"><div class="sw deluxe"><b>DELUXE</b><span>Room 204</span></div><div class="rb"><h3>Harbour King</h3><div class="mut sm">Sleeps 2</div><div class="am"><i>Wi-Fi</i><i>Harbour view</i><i>Minibar</i></div><div class="rf"><div><div class="pr">$189<small> / night</small></div><div class="mut sm">$567 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp" data-decor><span>BOOKED</span></div></div>
+                  <div class="room" data-reveal data-room="301"><div class="sw deluxe"><b>DELUXE</b><span>Room 301</span></div><div class="rb"><h3>Loft Studio</h3><div class="mut sm">Sleeps 3</div><div class="am"><i>Wi-Fi</i><i>Kitchenette</i></div><div class="rf"><div><div class="pr">$209<small> / night</small></div><div class="mut sm">$627 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp" data-decor><span>BOOKED</span></div></div>
+                  <div class="room" data-reveal data-room="205" data-booked="1"><div class="sw deluxe"><b>DELUXE</b><span>Room 205</span></div><div class="rb"><h3>Family Deluxe</h3><div class="mut sm">Sleeps 4</div><div class="am"><i>Wi-Fi</i><i>Sofa bed</i><i>Minibar</i></div><div class="rf"><div><div class="pr">$229<small> / night</small></div><div class="mut sm">$687 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp" data-decor><span>BOOKED</span></div></div>
+                  <div class="room" data-reveal data-room="401"><div class="sw suite"><b>SUITE</b><span>Room 401</span></div><div class="rb"><h3>Skyline Suite</h3><div class="mut sm">Sleeps 2</div><div class="am"><i>Wi-Fi</i><i>Balcony</i><i>Bathtub</i></div><div class="rf"><div><div class="pr">$349<small> / night</small></div><div class="mut sm">$1,047 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp" data-decor><span>BOOKED</span></div></div>
+                  <div class="room" data-reveal data-room="402" data-booked="1"><div class="sw suite"><b>SUITE</b><span>Room 402</span></div><div class="rb"><h3>Penthouse</h3><div class="mut sm">Sleeps 6</div><div class="am"><i>Wi-Fi</i><i>Terrace</i><i>Butler</i></div><div class="rf"><div><div class="pr">$599<small> / night</small></div><div class="mut sm">$1,797 total</div></div><button class="btn-o">Book</button></div></div><div class="stamp" data-decor><span>BOOKED</span></div></div>
                 </div>
               </div>
             </div>
@@ -1217,8 +1229,8 @@ body.clean #dock { display: none; }
                 <div class="mut">Almost there. Who's staying?</div>
                 <div class="bk-row">
                   <div class="a-card bk-form">
-                    <div class="fld f-name"><label>Full name</label><div class="inp"><span class="val" data-ph="Ada Lovelace"></span></div><div class="vmsg">Please enter the guest's full name.</div></div>
-                    <div class="fld f-email"><label>Email</label><div class="inp"><span class="val" data-ph="ada@example.com"></span></div><div class="vmsg">We need an email to send the confirmation to.</div></div>
+                    <div class="fld f-name"><label>Full name</label><div class="inp"><span class="val" data-ph="Ada Lovelace"></span></div><div class="vmsg" data-reveal>Please enter the guest's full name.</div></div>
+                    <div class="fld f-email"><label>Email</label><div class="inp"><span class="val" data-ph="ada@example.com"></span></div><div class="vmsg" data-reveal>We need an email to send the confirmation to.</div></div>
                     <div class="fld f-req"><label>Special requests <span class="mut">(optional)</span></label><div class="inp area"><span class="val" data-ph="Late check-in, extra pillows…"></span></div></div>
                     <div class="bk-actions"><button class="btn-p">Confirm booking · $567</button><span class="lnk">Back to search</span></div>
                   </div>
@@ -1267,18 +1279,18 @@ body.clean #dock { display: none; }
       <h2 class="fx up">Booking status</h2>
       <p class="fx up">Every booking moves through a small state machine. The UI only offers legal moves.</p>
       <div class="machine fx up">
-        <svg width="340" height="250" viewBox="0 0 340 250">
-          <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6f8a90"/></marker></defs>
-          <path class="edge e-in" d="M140 40 H196" marker-end="url(#ah)"/>
-          <path class="edge e-out" d="M265 62 V186" marker-end="url(#ah)"/>
-          <path class="edge e-cancel" d="M75 62 V186" marker-end="url(#ah)"/>
-          <text class="elabel l-in" x="168" y="8" text-anchor="middle">CheckIn()</text>
-          <text class="elabel l-out" x="256" y="128" text-anchor="end">CheckOut()</text>
-          <text class="elabel l-cancel" x="85" y="128">Cancel()</text>
-          <g class="node n-confirmed"><rect x="10" y="20" width="130" height="42" rx="10"/><text x="75" y="46" text-anchor="middle">Confirmed</text></g>
-          <g class="node n-checkedin"><rect x="200" y="20" width="130" height="42" rx="10"/><text x="265" y="46" text-anchor="middle">Checked in</text></g>
-          <g class="node n-checkedout"><rect x="200" y="188" width="130" height="42" rx="10"/><text x="265" y="214" text-anchor="middle">Checked out</text></g>
-          <g class="node n-cancelled"><rect x="10" y="188" width="130" height="42" rx="10"/><text x="75" y="214" text-anchor="middle">Cancelled</text></g>
+        <svg width="340" height="250" viewBox="0 0 340 250" role="group" aria-label="Booking state machine with four states.">
+          <defs aria-hidden="true"><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6f8a90"/></marker></defs>
+          <path aria-hidden="true" class="edge e-in" d="M140 40 H196" marker-end="url(#ah)"/>
+          <path aria-hidden="true" class="edge e-out" d="M265 62 V186" marker-end="url(#ah)"/>
+          <path aria-hidden="true" class="edge e-cancel" d="M75 62 V186" marker-end="url(#ah)"/>
+          <text aria-hidden="true" class="elabel l-in" x="168" y="8" text-anchor="middle">CheckIn()</text>
+          <text aria-hidden="true" class="elabel l-out" x="256" y="128" text-anchor="end">CheckOut()</text>
+          <text aria-hidden="true" class="elabel l-cancel" x="85" y="128">Cancel()</text>
+          <g class="node n-confirmed" role="img" data-label="Confirmed: a new booking starts here. It moves to Checked in through CheckIn, or to Cancelled through Cancel." aria-label="Confirmed: a new booking starts here. It moves to Checked in through CheckIn, or to Cancelled through Cancel."><rect x="10" y="20" width="130" height="42" rx="10"/><text x="75" y="46" text-anchor="middle">Confirmed</text></g>
+          <g class="node n-checkedin" role="img" data-label="Checked in: reached from Confirmed through CheckIn. It moves to Checked out through CheckOut." aria-label="Checked in: reached from Confirmed through CheckIn. It moves to Checked out through CheckOut."><rect x="200" y="20" width="130" height="42" rx="10"/><text x="265" y="46" text-anchor="middle">Checked in</text></g>
+          <g class="node n-checkedout" role="img" data-label="Checked out: reached from Checked in through CheckOut. A final state with no further moves." aria-label="Checked out: reached from Checked in through CheckOut. A final state with no further moves."><rect x="200" y="188" width="130" height="42" rx="10"/><text x="265" y="214" text-anchor="middle">Checked out</text></g>
+          <g class="node n-cancelled" role="img" data-label="Cancelled: reached from Confirmed through Cancel. A final state with no further moves." aria-label="Cancelled: reached from Confirmed through Cancel. A final state with no further moves."><rect x="10" y="188" width="130" height="42" rx="10"/><text x="75" y="214" text-anchor="middle">Cancelled</text></g>
         </svg>
       </div>
       <div class="src fx"><b>Bookings.razor</b> · StatusBadge.razor<br>BookingService.Transition()</div>
@@ -1297,11 +1309,11 @@ body.clean #dock { display: none; }
               <div class="bk-head">
                 <div><h1>Bookings</h1><div class="mut">Move guests through their stay: check in, check out, or cancel.</div></div>
                 <div class="flt">
-                  <button class="on" data-f="all">All<span class="c">8</span></button>
-                  <button data-f="confirmed">Confirmed<span class="c">4</span></button>
-                  <button data-f="checkedin">Checked in<span class="c">2</span></button>
-                  <button data-f="checkedout">Checked out<span class="c">1</span></button>
-                  <button data-f="cancelled">Cancelled<span class="c">1</span></button>
+                  <button class="on" aria-pressed="true" data-f="all">All<span class="c">8</span></button>
+                  <button aria-pressed="false" data-f="confirmed">Confirmed<span class="c">4</span></button>
+                  <button aria-pressed="false" data-f="checkedin">Checked in<span class="c">2</span></button>
+                  <button aria-pressed="false" data-f="checkedout">Checked out<span class="c">1</span></button>
+                  <button aria-pressed="false" data-f="cancelled">Cancelled<span class="c">1</span></button>
                 </div>
               </div>
               <div class="tbl">
@@ -1355,49 +1367,55 @@ body.clean #dock { display: none; }
 </div>
 
 <!-- ============================== PRESENTER CHROME ============================== -->
-<div id="progress"><div id="progress-fill"></div></div>
-<div id="toast"></div>
+<div id="progress" aria-hidden="true"><div id="progress-fill"></div></div>
+<div id="toast" aria-hidden="true"></div>
+<!-- The one live region: short descriptions of the current view and of each change. -->
+<div id="sr-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
 <div id="dock">
+<!-- Icons inside buttons are decorative (aria-hidden is added at boot); visible text is each button's name. -->
 <div id="bar" role="toolbar" aria-label="Presentation controls">
-  <span class="grp">
+  <span class="grp" role="group" aria-labelledby="cap-play">
+    <span class="grp-cap" id="cap-play">Slides</span>
     <button id="b-prev" title="Previous slide (←)" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M15.4 4.6L8 12l7.4 7.4 1.4-1.4-6-6 6-6z"/></svg></button>
-    <button id="b-play" title="Play / pause (Space)" aria-label="Play or pause"><svg viewBox="0 0 24 24"><path id="i-play" d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg><span id="play-label">Pause</span></button>
+    <button id="b-play" title="Play / pause (Space)"><svg viewBox="0 0 24 24"><path id="i-play" d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg><span id="play-label">Pause</span></button>
     <button id="b-next" title="Next beat / slide (→)" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M8.6 4.6L16 12l-7.4 7.4L7.2 18l6-6-6-6z"/></svg></button>
   </span>
   <span id="counter">1 / 11</span>
-  <span class="sep"></span>
+  <span class="sep" aria-hidden="true"></span>
   <div id="scrub" title="Scrub this slide's timeline">
-    <div id="scrub-track"><div id="scrub-fill"></div><div id="scrub-beats"></div></div>
+    <div id="scrub-track" aria-hidden="true"><div id="scrub-fill"></div><div id="scrub-beats"></div></div>
     <input id="scrub-input" type="range" min="0" max="1000" step="1" value="0" aria-label="Slide timeline">
   </div>
-  <span id="time">0.0 / 0.0s</span>
-  <span class="sep"></span>
-  <span class="grp" title="Playback speed (+ / −, 0 resets)">
-    <button id="b-slower" aria-label="Slower"><b>−</b></button>
-    <button id="speed" title="Click to reset to 1×" aria-label="Playback speed">1×</button>
-    <button id="b-faster" aria-label="Faster"><b>+</b></button>
+  <span id="time" aria-hidden="true">0.0 / 0.0s</span>
+  <span class="sep" aria-hidden="true"></span>
+  <span class="grp" role="group" aria-labelledby="cap-speed" title="Playback speed (+ / −, 0 resets)">
+    <span class="grp-cap" id="cap-speed">Speed</span>
+    <button id="b-slower" aria-label="Slower"><b aria-hidden="true">−</b></button>
+    <button id="speed" title="Click to reset to 1×">1×<span class="sr-only"> speed, reset to normal</span></button>
+    <button id="b-faster" aria-label="Faster"><b aria-hidden="true">+</b></button>
   </span>
-  <button id="b-hold" title="Hold at beats (S)" aria-label="Toggle holding at beats">
+  <button id="b-hold" role="switch" aria-checked="true" title="Hold at beats (S)">
     <svg viewBox="0 0 24 24"><path d="M6 3h2v18H6zM10 5l10 7-10 7z" opacity=".9"/></svg><span>Holds</span></button>
-  <button id="b-auto" title="Auto-advance slides (A)" aria-label="Toggle auto-advance">
-    <svg viewBox="0 0 24 24"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg><span>Auto</span></button>
+  <button id="b-auto" role="switch" aria-checked="false" title="Auto-advance slides (A)">
+    <svg viewBox="0 0 24 24"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg><span>Auto</span><span class="sr-only">-advance</span></button>
   <button id="b-replay" title="Replay slide (R)" aria-label="Replay slide"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
   <button id="b-end" title="Skip to end of slide (E)" aria-label="Skip to end of slide"><svg viewBox="0 0 24 24"><path d="M5 5l9 7-9 7zM16 5h3v14h-3z"/></svg></button>
-  <button id="b-overview" title="Overview (O)" aria-label="Slide overview"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z"/></svg></button>
+  <button id="b-overview" title="Overview (O)" aria-label="Slide overview" aria-haspopup="dialog"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z"/></svg></button>
   <button id="b-full" title="Fullscreen (F)" aria-label="Fullscreen"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zM14 4h6v6h-2V6h-4zM4 14h2v4h4v2H4zM18 14h2v6h-6v-2h4z"/></svg></button>
-  <button id="b-theme" title="Light / dark theme (T)" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24"><path id="i-theme" d=""/></svg><span id="theme-label">Dark</span></button>
-  <button id="b-dock" title="Hide controls &amp; storyboard for a clean view (D)" aria-label="Hide dock"><svg viewBox="0 0 24 24"><path d="M3 4h18v16H3zM5 6v8h14V6z"/></svg><span>Clean view</span></button>
-  <button id="b-notes" title="Speaker notes in a separate window (N). Share only the deck window." aria-label="Open speaker notes"><svg viewBox="0 0 24 24"><path d="M5 3h11l4 4v14H5zM8 9h8v2H8zM8 13h8v2H8zM8 17h5v2H8z"/></svg><span>Notes</span></button>
-  <button id="b-help" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><b>?</b></button>
+  <button id="b-theme" role="switch" aria-checked="false" title="Dark theme (T)"><svg viewBox="0 0 24 24"><path id="i-theme" d=""/></svg><span id="theme-label">Dark</span></button>
+  <button id="b-dock" role="switch" aria-checked="false" title="Hide controls &amp; storyboard for a clean view (D)"><svg viewBox="0 0 24 24"><path d="M3 4h18v16H3zM5 6v8h14V6z"/></svg><span>Clean view</span></button>
+  <button id="b-notes" title="Speaker notes in a separate window (N). Share only the deck window."><svg viewBox="0 0 24 24"><path d="M5 3h11l4 4v14H5zM8 9h8v2H8zM8 13h8v2H8zM8 17h5v2H8z"/></svg><span>Notes</span><span class="sr-only"> (opens a separate window)</span></button>
+  <button id="b-help" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts" aria-haspopup="dialog"><b aria-hidden="true">?</b></button>
 </div>
-<div id="strip" role="list" aria-label="Storyboard"></div>
+<div class="strip-cap" id="cap-strip">Storyboard</div>
+<div id="strip" role="group" aria-labelledby="cap-strip"></div>
 </div>
 
-<div id="overview" class="overlay" hidden><div class="ov-grid"></div></div>
-<div id="help" class="overlay" hidden>
+<div id="overview" class="overlay" role="dialog" aria-modal="true" aria-labelledby="ov-title" hidden><h2 id="ov-title" class="sr-only">Slide overview</h2><div class="ov-grid"></div></div>
+<div id="help" class="overlay" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
   <div class="help">
-    <h2>Presenter controls</h2>
+    <h2 id="help-title">Presenter controls</h2>
     <dl>
       <dt><kbd>→</kbd> <kbd>PgDn</kbd></dt><dd>Next beat, or next slide when the slide is finished</dd>
       <dt><kbd>←</kbd> <kbd>PgUp</kbd></dt><dd>Previous slide (shown finished)</dd>
@@ -1458,6 +1476,30 @@ body.clean #dock { display: none; }
   /* {{PRERENDER}}: optional code that generates repeated markup (shared screens, icon rows,
      leaderboards) into the slides BEFORE they are snapshotted. Runs once, before any builder. */
 
+  /* Accessibility (see references/accessibility.md), applied BEFORE the snapshot so every
+     replay and thumbnail keeps it. */
+  function prepareA11y(root) {
+    if (!root) return;
+    // Pure decoration is hidden from screen readers.
+    $$('.cursor, .ripple, .confetto, .token, .spark, .clap, .scan, [data-decor]', root)
+      .forEach(el => el.setAttribute('aria-hidden', 'true'));
+    // SVGs without a label are icons or decoration. Diagrams must carry role + aria-label to stay readable.
+    $$('svg:not([role]):not([aria-label]):not([aria-labelledby])', root)
+      .forEach(el => { el.setAttribute('aria-hidden', 'true'); el.setAttribute('focusable', 'false'); });
+    // Recreated app screens are pictures of an app: their buttons and inputs do nothing here.
+    // Keep their text readable, but take them out of the tab order and mark them unavailable.
+    $$('.vp button, .vp a[href], .vp input, .vp select, .vp textarea', root)
+      .forEach(el => { el.setAttribute('tabindex', '-1'); el.setAttribute('aria-disabled', 'true'); });
+  }
+  prepareA11y(stage);
+  prepareA11y($('#dock'));
+  // Each slide is announced by its number and title (WAI carousel pattern).
+  slides.forEach((s, k) => {
+    s.setAttribute('role', 'group');
+    s.setAttribute('aria-roledescription', 'slide');
+    s.setAttribute('aria-label', `${k + 1} of ${slides.length}: ${s.dataset.title || ''}`);
+  });
+
   const originals = slides.map(s => s.innerHTML);
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -1509,7 +1551,37 @@ body.clean #dock { display: none; }
         if (p >= 1) it.finished = true;
       }
     }
+    syncHidden();
   }
+
+  /* Hidden-until-revealed content (.fx, .w, .mask, .callout, anything with data-reveal) is hidden from
+     screen readers while invisible, and exposed the moment it shows (.in / .show / .cur). */
+  const REVEAL_SEL = '.fx, .w, .mask, .callout, [data-reveal]';
+  const isShown = el => ['in', 'show', 'cur', 'open'].some(c => el.classList.contains(c));
+  function syncHidden() {
+    const s = slides[state.i];
+    if (!s) return;
+    for (const el of s.querySelectorAll(REVEAL_SEL)) {
+      const shown = isShown(el);
+      if (shown && el.dataset.srHidden) { el.removeAttribute('aria-hidden'); delete el.dataset.srHidden; }
+      else if (!shown && !el.hasAttribute('aria-hidden')) { el.setAttribute('aria-hidden', 'true'); el.dataset.srHidden = '1'; }
+    }
+  }
+
+  /* One polite live region announces a short description of the current view. Debounced, so
+     scrubbing or skipping announces only where you land, never the steps in between. */
+  let announceTimer;
+  function announce(msg) {
+    if (!msg) return;
+    clearTimeout(announceTimer);
+    announceTimer = setTimeout(() => {
+      const r = $('#sr-live');
+      if (!r) return;
+      r.textContent = '';
+      setTimeout(() => { r.textContent = msg; }, 30);   // not rAF: it doesn't run in background tabs
+    }, 250);
+  }
+  const slideLabel = (i = state.i) => `Slide ${i + 1} of ${slides.length}: ${slides[i].dataset.title || ''}.`;
 
   function build(i) {
     const s = slides[i];
@@ -1553,6 +1625,7 @@ body.clean #dock { display: none; }
     drawBeats();
     try { history.replaceState(null, '', '#slide-' + (i + 1)); } catch (_) {}
     updateUI(true);
+    announce(slideLabel(i));
   }
 
   function seek(target) {
@@ -1624,6 +1697,7 @@ body.clean #dock { display: none; }
         if (state.holds && state.beatIdx < tl.beats.length && nt >= tl.beats[state.beatIdx]) {
           nt = tl.beats[state.beatIdx];
           state.holding = true;
+          announce('Paused. Press the right arrow or Space to continue.');
         }
         process(nt);
         state.t = nt;
@@ -1712,6 +1786,7 @@ body.clean #dock { display: none; }
       c.classList.remove('down'); void c.offsetWidth; c.classList.add('down');
       const r = document.createElement('span');
       r.className = 'ripple';
+      r.setAttribute('aria-hidden', 'true');
       r.style.left = c.dataset.x + 'px';
       r.style.top = c.dataset.y + 'px';
       app.appendChild(r);
@@ -1757,10 +1832,16 @@ body.clean #dock { display: none; }
   }
 
   function step(tl, s, n) {
-    tl.do(() => $$('.steps li', s).forEach((li, k) => {
-      li.classList.toggle('done', k < n);
-      li.classList.toggle('now', k === n);
-    }));
+    tl.do(() => {
+      const items = $$('.steps li', s);
+      items.forEach((li, k) => {
+        li.classList.toggle('done', k < n);
+        li.classList.toggle('now', k === n);
+        // State in words for screen readers ("done" / "current" are otherwise colour-only).
+        if (k === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+      });
+      if (items[n]) announce(`${slideLabel()} Step ${n + 1} of ${items.length}: ${items[n].textContent.trim()}.`);
+    });
   }
 
   function confetti(container, n = 90, ox = .5, oy = .45) {
@@ -1769,6 +1850,7 @@ body.clean #dock { display: none; }
     for (let i = 0; i < n; i++) {
       const d = document.createElement('i');
       d.className = 'confetto';
+      d.setAttribute('aria-hidden', 'true');
       const a = Math.random() * Math.PI * 2, v = 160 + Math.random() * 420;
       d.style.setProperty('--dx', Math.cos(a) * v + 'px');
       d.style.setProperty('--dy', Math.sin(a) * v * .7 - 220 + 'px');
@@ -1917,6 +1999,7 @@ body.clean #dock { display: none; }
           const p1 = { x: (p0.x + p2.x) / 2, y: Math.min(p0.y, p2.y) - 110 };
           const tok = document.createElement('div');
           tok.className = 'token';
+          tok.setAttribute('aria-hidden', 'true');
           tok.textContent = f.dataset.short;
           flow.appendChild(tok);
           let hit = false;
@@ -2148,11 +2231,15 @@ body.clean #dock { display: none; }
     status(s, tl) {
       const app = $('.app', s);
       const row = ref => $(`.tr[data-ref="${ref}"]`, app);
+      // Diagram labels must state what's highlighted (the highlight itself is only colour).
+      const relabel = (note = 'A booking just moved here.') => $$('.machine .node', s).forEach(n =>
+        n.setAttribute('aria-label', n.dataset.label + (n.classList.contains('lit') ? ' ' + note : '')));
       const lit = (edge, node) => tl.do(() => {
         $$('.machine .lit', s).forEach(e => e.classList.remove('lit'));
         $(`.machine .e-${edge}`, s).classList.add('lit');
         $(`.machine .l-${edge}`, s).classList.add('lit');
         $(`.machine .n-${node}`, s).classList.add('lit');
+        relabel();
       });
       const setCount = (key, n) => {
         const c = $(`.flt [data-f="${key}"] .c`, app);
@@ -2202,17 +2289,20 @@ body.clean #dock { display: none; }
       const fIn = $('.flt [data-f="checkedin"]', app), fAll = $('.flt [data-f="all"]', app);
       moveTo(tl, app, fIn, 700); click(tl, app, fIn);
       tl.do(() => {
-        $$('.flt button', app).forEach(b => b.classList.toggle('on', b === fIn));
-        $$('.tr:not(.th)', app).forEach(r => r.classList.toggle('hide', r.dataset.status !== 'checkedin'));
+        $$('.flt button', app).forEach(b => { b.classList.toggle('on', b === fIn); b.setAttribute('aria-pressed', String(b === fIn)); });
+        // Rows hidden by the filter are hidden from screen readers too.
+        $$('.tr:not(.th)', app).forEach(r => { const hide = r.dataset.status !== 'checkedin'; r.classList.toggle('hide', hide); if (hide) r.setAttribute('aria-hidden', 'true'); else r.removeAttribute('aria-hidden'); });
         $$('.machine .lit', s).forEach(e => e.classList.remove('lit'));
         $('.machine .n-checkedin', s).classList.add('lit');
+        relabel('The table is filtered to bookings in this state.');
       });
       tl.wait(1800);
       moveTo(tl, app, fAll, 600); click(tl, app, fAll);
       tl.do(() => {
-        $$('.flt button', app).forEach(b => b.classList.toggle('on', b === fAll));
-        $$('.tr', app).forEach(r => r.classList.remove('hide'));
+        $$('.flt button', app).forEach(b => { b.classList.toggle('on', b === fAll); b.setAttribute('aria-pressed', String(b === fAll)); });
+        $$('.tr', app).forEach(r => { r.classList.remove('hide'); r.removeAttribute('aria-hidden'); });
         $$('.machine .lit', s).forEach(e => e.classList.remove('lit'));
+        relabel();
       });
       tl.wait(900);
     },
@@ -2278,11 +2368,17 @@ body.clean #dock { display: none; }
       c.classList.toggle('seen', k < state.i);
       c._bar.style.width = (k < state.i ? 100 : isCur ? frac * 100 : 0) + '%';
     });
-    ui.speed.textContent = state.rate + '×';
+    if (ui.speed.firstChild.nodeValue !== state.rate + '×') ui.speed.firstChild.nodeValue = state.rate + '×';
     ui.hold.classList.toggle('on', state.holds);
     ui.auto.classList.toggle('on', state.auto);
     ui.hint.classList.toggle('show', state.holding);
+    // Accessibility state: switches, slider value in words, busy while animating.
+    setAttr(ui.hold, 'aria-checked', String(state.holds));
+    setAttr(ui.auto, 'aria-checked', String(state.auto));
+    setAttr(ui.scrub, 'aria-valuetext', `${(state.t / 1000).toFixed(1)} of ${(tl.dur / 1000).toFixed(1)} seconds`);
+    setAttr(stage, 'aria-busy', String(playing));
   }
+  function setAttr(el, name, value) { if (el && el.getAttribute(name) !== value) el.setAttribute(name, value); }
 
   function drawBeats() {
     const tl = state.tl;
@@ -2291,6 +2387,7 @@ body.clean #dock { display: none; }
 
   let toastTimer;
   function toast(msg) {
+    announce(msg);              // the toast itself is aria-hidden; the live region says it once
     ui.toast.textContent = msg;
     ui.toast.classList.add('show');
     clearTimeout(toastTimer);
@@ -2309,10 +2406,12 @@ body.clean #dock { display: none; }
     stripCards = slides.map((s, k) => {
       const card = document.createElement('button');
       card.className = 'sb';
-      card.setAttribute('role', 'listitem');
       card.title = `Go to slide ${k + 1}: ${s.dataset.title}`;
       const mini = document.createElement('div');
       mini.className = 'mini';
+      // The thumbnail is a full copy of the slide: hide it, or everything would be read twice.
+      // The visible caption ("03 Title") is the button's name.
+      mini.setAttribute('aria-hidden', 'true');
       const inner = document.createElement('div');
       inner.className = 'inner';
       const clone = s.cloneNode(false);
@@ -2338,9 +2437,10 @@ body.clean #dock { display: none; }
   const MOON = 'M21 14.5A9 9 0 0 1 9.5 3a9 9 0 1 0 11.5 11.5z';
   function applyTheme(t, save = true) {
     document.documentElement.dataset.theme = t;
-    // The button shows the theme you would switch TO.
-    $('#i-theme').setAttribute('d', t === 'light' ? MOON : SUN);
-    $('#theme-label').textContent = t === 'light' ? 'Dark' : 'Light';
+    // A "Dark" switch: the label never changes; aria-checked and the icon show the state.
+    const b = $('#b-theme');
+    $('#i-theme').setAttribute('d', t === 'dark' ? MOON : SUN);
+    if (b) { b.setAttribute('aria-checked', String(t === 'dark')); b.classList.toggle('on', t === 'dark'); }
     if (save) { try { localStorage.setItem('deck-theme', t); } catch (_) {} }
   }
   function toggleTheme() {
@@ -2350,23 +2450,36 @@ body.clean #dock { display: none; }
 
   function toggleDock() {
     document.body.classList.toggle('clean');
+    setAttr($('#b-dock'), 'aria-checked', String(document.body.classList.contains('clean')));
     fit();
     toast(document.body.classList.contains('clean') ? 'Clean view: press D for controls' : 'Controls shown');
   }
 
+  let overlayOpener = null;
   function openOverlay(el) {
-    closeOverlays();
+    const opener = document.activeElement;
+    closeOverlays(false);
+    overlayOpener = opener;
     el.hidden = false;
     if (el === ui.overview) {
       const grid = $('.ov-grid', el);
       grid.innerHTML = slides.map((s, k) =>
-        `<button class="ov-card${k === state.i ? ' cur' : ''}" data-k="${k}"><span class="no">${String(k + 1).padStart(2, '0')}</span><span class="tt">${s.dataset.title}</span></button>`).join('');
+        `<button class="ov-card${k === state.i ? ' cur' : ''}" data-k="${k}"${k === state.i ? ' aria-current="step"' : ''}><span class="no">${String(k + 1).padStart(2, '0')}</span> <span class="tt">${s.dataset.title}</span></button>`).join('');
       const cur = $('.ov-card.cur', grid);
       if (cur) cur.focus();
+    } else {
+      const box = $('.help', el);
+      box.setAttribute('tabindex', '-1');
+      box.focus();
     }
     showBar();
   }
-  function closeOverlays() { ui.overview.hidden = true; ui.help.hidden = true; }
+  function closeOverlays(restoreFocus = true) {
+    const wasOpen = anyOverlay();
+    ui.overview.hidden = true; ui.help.hidden = true;
+    // Escape / close returns focus to the control that opened the panel.
+    if (restoreFocus && wasOpen && overlayOpener && overlayOpener.focus) overlayOpener.focus();
+  }
   const anyOverlay = () => !ui.overview.hidden || !ui.help.hidden;
 
   function toggleFullscreen() {
@@ -2412,38 +2525,41 @@ body.clean #dock { display: none; }
     const nv = document.createElement('div');
     nv.id = 'nv';
     nv.innerHTML = `
+      <div id="nv-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
       <header class="nv-top">
-        <div class="nv-slide"><span class="nv-no">--</span><span class="nv-of"></span><span class="nv-title">Waiting for the deck</span></div>
-        <div class="nv-status"><span class="nv-dot"></span><span class="nv-conn"></span></div>
-        <div class="nv-timer"><span class="nv-elapsed">00:00</span><span class="nv-target"></span><span class="nv-tbar"><i></i></span>
+        <h1 class="nv-slide"><span class="nv-no">--</span><span class="nv-of"></span> <span class="nv-title">Waiting for the deck</span></h1>
+        <div class="nv-status"><span class="nv-dot" aria-hidden="true"></span><span class="nv-conn"></span></div>
+        <div class="nv-timer" role="group" aria-labelledby="nv-timer-cap"><span class="nv-label" id="nv-timer-cap" style="margin:0">Talk timer</span>
+          <span class="nv-elapsed">00:00</span><span class="nv-target"></span><span class="nv-tbar" aria-hidden="true"><i></i></span>
           <button data-t="toggle">Start</button><button data-t="reset">Reset</button></div>
         <div class="nv-clock"></div>
       </header>
       <main class="nv-main">
         <section>
-          <div class="nv-label">Talking points</div>
-          <div class="nv-summary" contenteditable="true" spellcheck="true"></div>
-          <div class="nv-label">Cues <small>: highlighted as the slide plays. Click a time to jump the deck there.</small></div>
-          <ol class="nv-cues"></ol>
-          <div class="nv-hold">Holding at a beat: press &rarr; or Space to continue</div>
+          <h2 class="nv-label" id="nv-sum-cap">Talking points</h2>
+          <div class="nv-summary" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-labelledby="nv-sum-cap"></div>
+          <h2 class="nv-label" id="nv-cue-cap">Cues <small>: highlighted as the slide plays. Use a cue's time button to jump the deck there.</small></h2>
+          <ol class="nv-cues" aria-labelledby="nv-cue-cap"></ol>
+          <div class="nv-hold" aria-hidden="true">Holding at a beat: press &rarr; or Space to continue</div>
         </section>
-        <aside class="nv-side">
-          <div class="nv-label">On screen now</div><div class="nv-mini cur"></div>
-          <div class="nv-label">Next up</div><div class="nv-mini nxt"></div>
+        <aside class="nv-side" aria-label="Previews">
+          <div class="nv-label">On screen now</div><div class="nv-mini cur" aria-hidden="true"></div>
+          <div class="nv-label">Next up</div><div class="nv-mini nxt" aria-hidden="true"></div>
           <div class="nv-nexttitle"></div><div class="nv-nextsum"></div>
         </aside>
       </main>
-      <footer class="nv-bar">
+      <footer class="nv-bar" role="group" aria-labelledby="nv-ctl-cap">
+        <span class="nv-label" id="nv-ctl-cap" style="margin:0">Deck</span>
         <button data-c="prev" class="big">&larr; Prev</button>
         <button data-c="toggle" class="big primary nv-play">Play</button>
         <button data-c="next" class="big">Next &rarr;</button>
         <button data-c="replay">Replay slide</button>
         <span class="nv-sp"></span>
-        <span class="nv-prog"><i></i></span><span class="nv-time"></span>
+        <span class="nv-prog" aria-hidden="true"><i></i></span><span class="nv-time" aria-hidden="true"></span>
         <button data-x="copy">Copy edited notes</button>
         <button data-x="discard">Discard edits</button>
       </footer>
-      <textarea class="nv-export" hidden readonly></textarea>`;
+      <textarea class="nv-export" hidden readonly aria-label="Edited notes to copy"></textarea>`;
     document.body.appendChild(nv);
     const q = sel => $(sel, nv);
 
@@ -2514,9 +2630,13 @@ body.clean #dock { display: none; }
         const li = document.createElement('li');
         li.className = (c.hold ? 'hold' : '') + (editedCue(k, idx) ? ' edited' : '');
         li.dataset.t = c.t;
-        li.innerHTML = '<span class="ts" title="Jump the deck to this moment"></span><span class="tx" contenteditable="true" spellcheck="true"></span>';
-        li.firstChild.textContent = (c.t / 1000).toFixed(1) + 's';
+        // The time is a real button (keyboard + screen reader); the cue text is an editable textbox.
+        li.innerHTML = '<button type="button" class="ts" title="Jump the deck to this moment"></button><span class="tx" contenteditable="true" spellcheck="true" role="textbox"></span>';
+        const secs = (c.t / 1000).toFixed(1);
+        li.firstChild.textContent = secs + 's';
+        li.firstChild.setAttribute('aria-label', `Jump to ${secs} seconds`);
         li.lastChild.textContent = editedCue(k, idx) ? edits[k].cues[idx] : c.label;
+        li.lastChild.setAttribute('aria-label', `Cue at ${secs} seconds${c.hold ? ', the deck pauses here' : ''} (editable)`);
         li.lastChild.dataset.idx = idx;
         ol.appendChild(li);
       });
@@ -2528,14 +2648,30 @@ body.clean #dock { display: none; }
       tmp.innerHTML = n ? ((edits[k + 1] || {}).summary ?? n.summary) : '';
       q('.nv-nextsum').textContent = tmp.textContent.trim().slice(0, 200);
     }
+    // The notes window's own live region: slide changes, the current cue, and holds.
+    let nvTimer;
+    const say = msg => { clearTimeout(nvTimer); nvTimer = setTimeout(() => { const r = q('#nv-live'); r.textContent = ''; setTimeout(() => { r.textContent = msg; }, 30); }, 250); };
+    let saidSlide = -1, saidHold = false;
     function render() {
       if (!st) return;
       if (st.i !== shownSlide) renderSlide(st.i);
       const lis = $$('.nv-cues li[data-t]', nv);
       let now = -1;
       lis.forEach((li, idx) => { if (+li.dataset.t <= st.t + 1) now = idx; });
-      lis.forEach((li, idx) => { li.classList.toggle('past', idx < now); li.classList.toggle('now', idx === now); });
-      if (lis[now] && lis[now] !== lastNow) { lastNow = lis[now]; lastNow.scrollIntoView({ block: 'nearest' }); }
+      lis.forEach((li, idx) => {
+        li.classList.toggle('past', idx < now); li.classList.toggle('now', idx === now);
+        if (idx === now) li.setAttribute('aria-current', 'true'); else li.removeAttribute('aria-current');
+      });
+      const editing = document.activeElement && document.activeElement.closest && document.activeElement.closest('[contenteditable="true"]');
+      if (lis[now] && lis[now] !== lastNow) {
+        lastNow = lis[now];
+        lastNow.scrollIntoView({ block: 'nearest' });
+        if (!editing) say(`Cue: ${lastNow.querySelector('.tx').textContent}`);
+      } else if (st.i !== saidSlide && !editing) {
+        say(`Slide ${st.i + 1} of ${slides.length}: ${data[st.i].title}.`);
+      }
+      if (st.holding && !saidHold && !editing) say('Deck paused at a beat.');
+      saidSlide = st.i; saidHold = !!st.holding;
       nv.classList.toggle('nv-holding', !!st.holding);
       const done = st.t >= st.dur - 1;
       q('.nv-play').textContent = st.holding ? 'Continue' : (st.playing && !done ? 'Pause' : (done ? 'Done' : 'Play'));
@@ -2694,6 +2830,51 @@ body.clean #dock { display: none; }
     get state() { return { slide: state.i + 1, of: slides.length, t: Math.round(state.t), dur: Math.round(state.tl.dur), playing: state.playing, theme: document.documentElement.dataset.theme }; },
     theme(t) { applyTheme(t, false); return t; },
     notes() { return openNotes(); },
+    /** Accessibility audit of the current view (references/accessibility.md). Returns a list of issues. */
+    audit() {
+      const issues = [];
+      const act = slides[state.i];
+      const desc = el => `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}${el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).join('.') : ''} "${(el.textContent || '').trim().slice(0, 40)}"`;
+      const ariaHidden = el => !!el.closest('[aria-hidden="true"]');
+      const rendered = el => { for (let n = el; n && n !== document.body; n = n.parentElement) { const cs = getComputedStyle(n); if (cs.display === 'none' || cs.visibility === 'hidden') return false; } return true; };
+      const nameOf = el => {
+        if (el.getAttribute('aria-label')) return el.getAttribute('aria-label').trim();
+        const by = el.getAttribute('aria-labelledby');
+        if (by) return by.split(/\s+/).map(id => (document.getElementById(id) || {}).textContent || '').join(' ').trim();
+        return [...el.childNodes].filter(n => !(n.nodeType === 1 && n.getAttribute('aria-hidden') === 'true')).map(n => n.textContent).join('').trim();
+      };
+      // 1. Invisible but still read: opacity 0 (itself) and not aria-hidden.
+      for (const el of act.querySelectorAll('*')) {
+        if (ariaHidden(el) || !rendered(el) || !el.textContent.trim()) continue;
+        if (parseFloat(getComputedStyle(el).opacity) === 0) issues.push('Invisible but read by screen readers (add .fx, data-reveal or aria-hidden): ' + desc(el));
+      }
+      // 2. Decoration exposed.
+      for (const el of document.querySelectorAll('#bg, .cursor, .ripple, .confetto, .token, .spark, .clap, #progress, #toast, #hold-hint, .sb .mini'))
+        if (!ariaHidden(el)) issues.push('Decoration or duplicate not hidden: ' + desc(el));
+      // 3. Interactive elements: real controls with a name.
+      for (const el of document.querySelectorAll('button, [role="button"], [role="switch"], a[href], input, select, textarea, [tabindex]')) {
+        if (ariaHidden(el) || !rendered(el) || el.closest('.vp')) continue;
+        if (!nameOf(el)) issues.push('Control without a name: ' + desc(el));
+        if (el.getAttribute('role') === 'switch' && !['true', 'false'].includes(el.getAttribute('aria-checked'))) issues.push('Switch without aria-checked: ' + desc(el));
+      }
+      for (const el of act.querySelectorAll('[onclick], .clickable')) if (!/^(BUTTON|A)$/.test(el.tagName) && el.getAttribute('role') !== 'button') issues.push('Clickable element is not a button: ' + desc(el));
+      // 4. Diagrams: labelled SVGs; groups labelled by a caption.
+      for (const svg of act.querySelectorAll('svg')) if (!ariaHidden(svg) && !svg.getAttribute('aria-label') && !svg.getAttribute('aria-labelledby')) issues.push('SVG neither labelled nor hidden: ' + desc(svg));
+      for (const g of document.querySelectorAll('[role="group"]')) if (rendered(g) && !g.getAttribute('aria-labelledby') && !g.getAttribute('aria-label')) issues.push('Group without a caption: ' + desc(g));
+      // 5. Read twice: identical exposed text blocks on the current slide.
+      const seen = new Map();
+      for (const el of act.querySelectorAll('p, li, h1, h2, h3, h4, span, div, b, code, td')) {
+        if (ariaHidden(el) || !rendered(el) || el.children.length) continue;
+        const t = el.textContent.trim();
+        if (t.length < 18) continue;
+        seen.set(t, (seen.get(t) || 0) + 1);
+      }
+      for (const [t, n] of seen) if (n > 1) issues.push(`Same text read ${n} times: "${t.slice(0, 50)}"`);
+      // 6. Live region and busy state present.
+      if (!document.querySelector('[aria-live="polite"]')) issues.push('No polite live region');
+      if (!stage.hasAttribute('aria-busy')) issues.push('Stage has no aria-busy');
+      return issues;
+    },
   };
 
   /* ---------- Speaker-notes sync, deck side ----------

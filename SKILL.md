@@ -91,7 +91,7 @@ Play everything back as one compact spec (template in `references/interview.md`)
 
 ## Step 5: Build
 
-Read `references/engine.md` first. It covers the template placeholders, the timeline API, the helpers, the CSS primitives, and the rules that prevent known bugs.
+Read `references/engine.md` and `references/accessibility.md` first. They cover the template placeholders, the timeline API, the helpers, the CSS primitives, and the rules that prevent known bugs.
 
 1. **Copy** `assets/deck-engine.html` to the agreed path (default `demo/index.html` in the app repo). Set `CONFIG` from the controls preset, fill in the title and description, and override the brand tokens. Set the default theme on `<html data-theme>` (light unless the interview chose dark). Give the brand darker `--*-light` accent variants so it reads in light mode as well as dark.
 2. **Write the slides** following the agreed story. The shape that holds together from start to finish:
@@ -125,13 +125,27 @@ Read `references/engine.md` first. It covers the template placeholders, the time
    - Remove the `#b-notes` button and the `'n'`/`'N'` key entries.
    - Grep the result to confirm no notes text remains.
    - The presenter's copy keeps the notes. Anything published or emailed is the share copy.
-9. Keep the engine's runtime untouched unless something is truly missing. Put deck-specific behaviour in builders and DECK_CSS.
+9. **Make it work with a screen reader.** This isn't optional. Read `references/accessibility.md`. The engine already handles hiding invisible content and decoration, the live region, `aria-busy`, switches, captions and dialogs. Your part:
+   - Add `data-reveal` to any hidden-until-shown element that isn't `.fx`, `.w`, `.mask` or `.callout`.
+   - Add `data-decor` (or `aria-hidden`) to decoration you add or create.
+   - Give every diagram and chart full-sentence `aria-label`s, including facts that are only visual, and update them when its state changes.
+   - Keep state that's shown only by colour in text too, and mark selected options with `aria-pressed`.
+   - Replace text instead of hiding old versions.
+10. Keep the engine's runtime untouched unless something is truly missing. Put deck-specific behaviour in builders and DECK_CSS.
 
 **Don't modify the user's app** to make the demo easier. The deck recreates the UI; it doesn't run the app.
 
 ## Step 6: Verify
 
 Open the deck in a browser and run the verification script from `references/engine.md` §7. Every slide must reach its end state with no errors, overflow, stuck cursors or warnings. Then screenshot each product-flow slide at its end state and at 2–3 mid points (scrub), plus the title, reveal and closing slides. Toggle the theme (`T`) and re-check a few slides in the other theme. Check for overflow, clipped or overlapping text, wrong formats, and thumbnails that look empty (add `data-mini-show` / `data-mini-hide`). Fix what you find and re-check. If the deck has speaker notes, open it a second time with `#notes` and check that every slide has a summary, every beat has a cue, and the two windows stay in sync (`references/engine.md` §7). If you made a share copy, run the verification script on it too, and confirm it contains no `class="notes"`, no labelled beats and no Notes button.
+
+**Accessibility check (required):** the §7 script also runs `deck.audit()` at the start, middle and end of every slide. It must return no issues anywhere, in both themes. Then follow `references/accessibility.md` §4:
+- Check the live region text after a few slide changes.
+- Check the notes window's buttons and textboxes.
+- Tab through the dock using only the keyboard.
+- If Playwright is available, take an aria snapshot of each view and state.
+
+Fix every issue before reporting.
 
 ## Step 7: Report
 
@@ -141,6 +155,6 @@ Tell the user:
 - The key controls: →, Space, + and −, R, T for light/dark, D for Clean view, N for speaker notes, F, ?.
 - For a Teams or Zoom talk: press `N` to open the notes window, then share **only the deck window**, never the whole screen.
 - If there's a share copy: which file to present from (the one with notes) and which to send afterwards (the share copy).
-- What you verified, and anything you couldn't check.
+- What you verified, and anything you couldn't check. Include the accessibility audit result, and say plainly if no real screen reader or aria snapshot was used.
 
 Offer the obvious next step: tweaks, a phone-frame variant, a kiosk preset, or publishing it as a link if a publishing tool is available. Don't commit or publish unless the user said to in the interview.
